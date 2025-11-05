@@ -6,6 +6,9 @@ rm -rf RetroArch.app
 mkdir -p RetroArch.app/Contents/MacOS
 cp -r pkg/apple/OSX/* RetroArch.app/Contents
 cp retroarch RetroArch.app/Contents/MacOS
+if [ -f gekkonet/mac/lib/libGekkoNet.dylib ]; then
+   cp gekkonet/mac/lib/libGekkoNet.dylib RetroArch.app/Contents/MacOS/
+fi
 
 mv RetroArch.app/Contents/Info_Metal.plist RetroArch.app/Contents/Info.plist
 
