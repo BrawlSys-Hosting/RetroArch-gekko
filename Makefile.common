@@ -109,6 +109,43 @@ endif
 
 INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include -I$(DEPS_DIR)
 
+ifeq ($(HAVE_NETWORKING), 1)
+   GEKKONET_PLATFORM :=
+   ifneq ($(findstring Linux,$(OS)),)
+      GEKKONET_PLATFORM := linux
+   else ifneq ($(findstring Darwin,$(OS)),)
+      GEKKONET_PLATFORM := mac
+   else ifneq ($(findstring Win32,$(OS)),)
+      GEKKONET_PLATFORM := windows
+   else ifeq ($(OS),Windows_NT)
+      GEKKONET_PLATFORM := windows
+   endif
+
+   ifneq ($(GEKKONET_PLATFORM),)
+      INCLUDE_DIRS += -I$(ROOT_DIR)/gekkonet/$(GEKKONET_PLATFORM)/include
+
+      ifeq ($(GEKKONET_PLATFORM),linux)
+         ifneq ($(filter 1,$(STATIC_LINKING) $(STATIC_BUILD) $(STATIC)),)
+            LIBS += $(ROOT_DIR)/gekkonet/linux/lib/libGekkoNet_STATIC.a
+         else
+            LIBS += -L$(ROOT_DIR)/gekkonet/linux/lib -lGekkoNet
+         endif
+      else ifeq ($(GEKKONET_PLATFORM),mac)
+         ifneq ($(filter 1,$(STATIC_LINKING) $(STATIC_BUILD) $(STATIC)),)
+            LIBS += $(ROOT_DIR)/gekkonet/mac/lib/libGekkoNet_STATIC.a
+         else
+            LIBS += -L$(ROOT_DIR)/gekkonet/mac/lib -lGekkoNet
+         endif
+      else ifeq ($(GEKKONET_PLATFORM),windows)
+         ifneq ($(filter 1,$(STATIC_LINKING) $(STATIC_BUILD) $(STATIC)),)
+            LIBS += $(ROOT_DIR)/gekkonet/windows/lib/libGekkoNet_STATIC.a
+         else
+            LIBS += -L$(ROOT_DIR)/gekkonet/windows/lib -lGekkoNet
+         endif
+      endif
+   endif
+endif
+
 # Switches
 #
 ifeq ($(HAVE_NETPLAYDISCOVERY), 1)

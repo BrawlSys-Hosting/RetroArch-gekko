@@ -1,4 +1,5 @@
 #!/bin/sh
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 ###############
 # Build script which builds and packages RetroArch for MinGW 32/64-bit.
 # Preferably build on Linux with a cross chain ... :D
@@ -39,6 +40,18 @@ message()
    echo "$@"
    echo "================================"
    echo ""
+}
+
+add_gekkonet_runtime()
+{
+   zip_target="$1"
+   runtime_path="$2"
+
+   if [ -f "$zip_target" ] && [ -f "$runtime_path" ]; then
+      runtime_name="$(basename "$runtime_path")"
+      cp -f "$runtime_path" "$runtime_name" || die "Failed to stage $runtime_name"
+      zip "$zip_target" "$runtime_name" || die "Failed to add $runtime_name to $zip_target"
+   fi
 }
 
 if [ -z "$MAKE" ]; then
@@ -93,6 +106,7 @@ do_build()
    RetroArch_DIR="$1"
    LIBZIPNAME="$2"
    BUILDTYPE="$3"
+   GEKKONET_DLL="${SCRIPT_DIR}/gekkonet/windows/lib/libGekkoNet.dll"
 
    if [ ! -d "$RetroArch_DIR" ]; then
       git clone git://github.com/libretro/RetroArch.git "$RetroArch_DIR"
@@ -121,6 +135,8 @@ do_build()
    ZIP_SLIM="`echo $ZIP_BASE | sed -e 's|\.zip|-slim.zip|'`"
    ZIP_FULL="`echo $ZIP_BASE | sed -e 's|\.zip|-full.zip|'`"
 
+   add_gekkonet_runtime "$ZIP_BASE" "$GEKKONET_DLL"
+
    if [ "$BUILD_PHOENIX_GUI" = "yes" ]; then
       zip "$ZIP_BASE" retroarch-phoenix.exe retroarch-phoenix.cfg
    fi
@@ -133,6 +149,8 @@ do_build()
    if [ "$BUILD_PHOENIX_GUI" = "yes" ]; then
       zip "$ZIP_BASE" retroarch-phoenix.exe retroarch-phoenix.cfg
    fi
+
+   add_gekkonet_runtime "$ZIP_BASE" "$GEKKONET_DLL"
 
    cp -v "$ZIP_BASE" "../$ZIP_FULL" || die "Failed to move final build ..."
    mv -v "$ZIP_BASE" ..
