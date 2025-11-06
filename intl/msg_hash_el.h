@@ -3327,11 +3327,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Χρήση Εξυπηρετητή Αναμετάδοσης"
+   "Relay Server (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Τοποθεσία Εξυπηρετητή Αναμετάδοσης"
+   "Desync Handling"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_IP_ADDRESS,

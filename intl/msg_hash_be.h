@@ -7263,27 +7263,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Выкарыстоўваць сервер-пасярэднік"
+   "Relay Server (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Пераадрасаванне злучэнняў праз прамежкавы сервер. Карысна ў тых выпадках, калі хост выкарыстоўвае брандмаўэр ці маюцца праблемы з NAT/UPnP."
+   "Legacy relay toggle preserved for backward compatibility."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Лакацыя сервера-пасярэдніка"
+   "Desync Handling"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Выбар вызначанага рэлейнага сервера. Лакацыі, якія знаходзяцца геаграфічна бліжэй звычайна маюць меншую затрымку."
+   "Strategy applied when peers fall out of sync (auto, rewind, spectator-only, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Ручны ўвод адраса сервера-пасярэдніка"
+   "Legacy Relay Override"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Увядзіце адрас вашага прамежкавага сервера. Фармат: адрас або адрас|порт."
+   "Obsolete relay server address used by classic MITM workflows."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7399,19 +7399,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Дазваляць кліентаў у slave-рэжыме"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Дазваляць злучэнні ў slave-рэжыме. Slave-кліенты патрабуюць вельмі мала вылічальнай магутнасці, але сеткавая затрымка для іх істотна вышэй."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Забараняць кліентаў не ў slave-рэжыме"
+   "Spectator Limit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Забараняць злучэнні не ў slave-рэжыме. Рэкамендуецца ўключаць толькі для вельмі хуткіх сетак са слабымі машынамі."
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -7427,27 +7427,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Кадры затрымкі ўводу"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Колькасць кадраў затрымкі ўводу для маскавання запазнення сеткавай гульні. Падвышае плыўнасць і памяншае нагрузку на працэсар, але ўносіць адчувальную затрымку ўводу."
+   "Frames of deliberate local delay to mask latency; higher values add input lag but keep gameplay stable."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Колькасць кадраў затрымкі ўводу для маскавання запазнення падчас сеткавай гульні.\nУносіць лакальную затрымку ўводу для максімальнай сінхранізацыі паміж бягучым кадрам і кадрамі, якія атрымліваюцца з сеткі. Падвышае плыўнасць і змяншае нагрузку на CPU, але павялічвае зат[...]"
+   "Number of frames that GekkoNet delays local inputs before simulation. Raising this hides jitter and reduces CPU spikes, but increases input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Дыяпазон кадраў затрымкі ўводу"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Дыяпазон кадраў затрымкі ўводу для згладжвання запазнення сеткі. Зніжае разсінхранізацыі і патрабаванні сеткавай гульні да прадукцыйнасці за кошт непрадказальнай затрымкі ўводу."
+   "How far the local delay may expand automatically to absorb latency spikes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Дыяпазон затрымкі ўводу для згладжвання запазнення сеткі.\nДынамічна падладжвае кадры затрымкі ўводу для балансу паміж працэсарным часам, затрымкай уводу і запазненнем сеткі. Падвышае плыўнасць і змяншае нагрузку на CPU, але непрадказальна ўплывае на затрымку ўводу."
+   "Maximum extra frames GekkoNet may borrow for prediction when network jitter occurs. Higher values smooth stutter at the cost of variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,

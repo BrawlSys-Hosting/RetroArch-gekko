@@ -387,34 +387,6 @@ static size_t menu_action_setting_disp_set_label_shader_scale_pass(
 #endif
 
 
-#ifdef HAVE_NETWORKING
-static size_t menu_action_setting_disp_set_label_netplay_mitm_server(
-      file_list_t *list, unsigned *w, unsigned type, unsigned i,
-      const char *label, char *s, size_t len,
-      const char *path, char *s2, size_t len2)
-{
-   size_t j;
-   menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)list->list[i].actiondata;
-   *w = 19;
-   *s = '\0';
-   if (!string_is_empty(path))
-      strlcpy(s2, path, len2);
-   if (cbs && cbs->setting)
-   {
-      const char *netplay_mitm_server = cbs->setting->value.target.string;
-      if (!string_is_empty(netplay_mitm_server))
-      {
-         for (j = 0; j < ARRAY_SIZE(netplay_mitm_server_list); j++)
-         {
-            const mitm_server_t *server = &netplay_mitm_server_list[j];
-            if (string_is_equal(server->name, netplay_mitm_server))
-               return strlcpy(s, msg_hash_to_str(server->description), len);
-         }
-      }
-   }
-   return 0;
-}
-#endif
 
 static size_t menu_action_setting_disp_set_label_menu_file_core(
       file_list_t* list,
@@ -2356,12 +2328,6 @@ int menu_cbs_init_bind_get_string_representation(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_ACHIEVEMENT_LIST_HARDCORE:
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_set_label_achievement_information);
-            return 0;
-         case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-#ifdef HAVE_NETWORKING
-            BIND_ACTION_GET_VALUE(cbs,
-                  menu_action_setting_disp_set_label_netplay_mitm_server);
-#endif
             return 0;
          case MENU_ENUM_LABEL_RESTART_RETROARCH:
          case MENU_ENUM_LABEL_QUIT_RETROARCH:

@@ -24,6 +24,8 @@
 #include "../../config.h"
 #endif
 
+#include "../../config.def.h"
+
 #include <libretro.h>
 #include <lists/string_list.h>
 #include <lrc_hash.h>
@@ -386,21 +388,30 @@ static void netplay_post_frame(netplay_t *netplay)
 static bool netplay_apply_settings(netplay_t *netplay,
       const settings_t *settings)
 {
+   const char *desync_mode = NULL;
+
    if (!netplay || !settings)
       return false;
 
-   netplay->allow_pause    = settings->bools.netplay_allow_pausing;
-   netplay->allow_timeskip = settings->bools.netplay_allow_slaves;
+   netplay->allow_pause = settings->bools.netplay_allow_pausing;
 
-   netplay->num_players             = (unsigned char)
+   desync_mode = settings->arrays.netplay_desync_handling;
+   if (string_is_empty(desync_mode))
+      desync_mode = DEFAULT_NETPLAY_DESYNC_HANDLING;
+
+   netplay->allow_timeskip =
+      string_is_equal_noncase(desync_mode, "auto") ||
+      string_is_equal_noncase(desync_mode, "rollback");
+
+   netplay->num_players = (unsigned char)
       (settings->uints.input_max_users <= 255
          ? settings->uints.input_max_users : 255);
    netplay->input_prediction_window = (unsigned char)
-      (settings->uints.netplay_input_latency_frames_range <= 255
-         ? settings->uints.netplay_input_latency_frames_range : 255);
-   netplay->spectator_delay         = (unsigned char)
-      (settings->uints.netplay_input_latency_frames_min <= 255
-         ? settings->uints.netplay_input_latency_frames_min : 255);
+      (settings->uints.netplay_prediction_window <= 255
+         ? settings->uints.netplay_prediction_window : 255);
+   netplay->spectator_delay = (unsigned char)
+      (settings->uints.netplay_local_delay <= 255
+         ? settings->uints.netplay_local_delay : 255);
 
    return netplay_refresh_serialization(netplay);
 }
@@ -420,7 +431,9 @@ static bool netplay_setup_session(netplay_t *netplay,
       return false;
 
    cfg.num_players             = netplay->num_players;
-   cfg.max_spectators          = 0;
+   cfg.max_spectators          = (unsigned char)
+      (settings->uints.netplay_spectator_limit <= 255
+         ? settings->uints.netplay_spectator_limit : 255);
    cfg.input_prediction_window = netplay->input_prediction_window;
    cfg.spectator_delay         = netplay->spectator_delay;
    cfg.input_size              = sizeof(uint16_t);

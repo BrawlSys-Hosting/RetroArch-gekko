@@ -7499,27 +7499,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Úsáid Freastalaí Athsheolta"
+   "Relay Server (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Seol naisc netplay ar aghaidh trí fhreastalaí fear-sa-lár. Úsáideach má tá an t-óstach taobh thiar de bhalla dóiteáin nó má tá fadhbanna NAT/UPnP aige."
+   "Legacy relay toggle preserved for backward compatibility."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Suíomh an Fhreastalaí Athsheolta"
+   "Desync Handling"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Roghnaigh freastalaí athsheachadta ar leith le húsáid. Is gnách go mbíonn moill níos ísle ag suíomhanna atá níos gaire go geografach."
+   "Strategy applied when peers fall out of sync (auto, rewind, spectator-only, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Seoladh Freastalaí Athsheolta Saincheaptha"
+   "Legacy Relay Override"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Cuir isteach seoladh do fhreastalaí athsheachadta saincheaptha anseo. Formáid: seoladh nó seoladh|port."
+   "Obsolete relay server address used by classic MITM workflows."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7635,19 +7635,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Ceadaigh Cliant Mód Sclábhaí"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Ceadaigh naisc i mód sclábhaí. Ní bhíonn mórán cumhachta próiseála ag teastáil ó chliaint i mód sclábhaí ar cheachtar taobh, ach beidh moill mhór líonra orthu."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Cosc a chur ar chliaint nach bhfuil i mód sclábhaí"
+   "Spectator Limit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Cosc a chur ar naisc nach bhfuil i mód sclábhaí. Ní mholtar é seo ach amháin i gcás líonraí an-tapa le meaisíní an-laga."
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -7663,27 +7663,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Frámaí Latency Ionchuir"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Líon na bhfrámaí de mhoill ionchuir le húsáid ag netplay chun moill líonra a cheilt. Laghdaíonn sé seo crith agus déanann netplay níos lú dian ar LAP, ar chostas moill ionchuir suntasach."
+   "Frames of deliberate local delay to mask latency; higher values add input lag but keep gameplay stable."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Líon na bhfrámaí de mhoill ionchuir le húsáid ag netplay chun moill líonra a cheilt.\nNuair atá netplay i bhfeidhm, cuireann an rogha seo moill ar ionchur áitiúil, ionas go mbeidh an fráma atá á rith níos gaire do na frámaí atá á bhfáil ón líonra. Laghdaíonn sé seo an crith agus déanann netplay níos lú dian ar LAP, ach ar chostas moille ionchuir suntasach."
+   "Number of frames that GekkoNet delays local inputs before simulation. Raising this hides jitter and reduces CPU spikes, but increases input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Raon Frámaí Latency Ionchuir"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "An raon frámaí moille ionchuir a fhéadfar a úsáid chun moille líonra a cheilt. Laghdaíonn sé seo crith agus déanann sé súgradh líonra níos lú dian ar LAP, ar chostas moille ionchuir dothuartha."
+   "How far the local delay may expand automatically to absorb latency spikes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "An raon frámaí moille ionchuir a fhéadfaidh netplay a úsáid chun moill líonra a cheilt.\nMá shocraítear é, déanfaidh netplay líon na bhfrámaí moille ionchuir a choigeartú go dinimiciúil chun am LAP, moill ionchuir agus moill líonra a chothromú. Laghdaíonn sé seo jitter agus déanann netplay níos lú dian ar LAP, ach ar chostas moille ionchuir dothuartha."
+   "Maximum extra frames GekkoNet may borrow for prediction when network jitter occurs. Higher values smooth stutter at the cost of variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,

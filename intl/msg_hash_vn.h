@@ -7515,27 +7515,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Sử dụng máy chủ chuyển tiếp"
+   "Relay Server (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Chuyển tiếp kết nối Trò chơi trực tuyến thông qua máy chủ trung gian. Hữu ích nếu máy chủ ở sau tường lửa hoặc gặp sự cố NAT/UPnP."
+   "Legacy relay toggle preserved for backward compatibility."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Vị trí máy chủ chuyển tiếp"
+   "Desync Handling"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Chọn một máy chủ chuyển tiếp cụ thể để sử dụng. Các vị trí gần về mặt địa lý thường có độ trễ thấp hơn."
+   "Strategy applied when peers fall out of sync (auto, rewind, spectator-only, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Địa Chỉ Máy Chủ Trung Gian Tùy Chỉnh"
+   "Legacy Relay Override"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Nhập địa chỉ máy chủ trung gian tùy chỉnh tại đây. Định dạng: địa chỉ hoặc địa chỉ|cổng."
+   "Obsolete relay server address used by classic MITM workflows."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7651,19 +7651,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Cho phép máy khách chế độ lệ thuộc"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Cho phép kết nối ở chế độ lệ thuộc. Máy khách chế độ lệ thuộc yêu cầu rất ít sức mạnh xử lý ở cả hai phía, nhưng sẽ bị ảnh hưởng đáng kể bởi độ trễ mạng."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Không cho phép máy khách không ở chế độ lệ thuộc"
+   "Spectator Limit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Không cho phép kết nối không ở chế độ lệ thuộc. Không khuyến nghị trừ khi sử dụng mạng rất nhanh với máy tính rất yếu."
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -7679,27 +7679,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Số khung hình trễ điều khiển"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Số khung hình trễ điều khiển mà Trò chơi trực tuyến sử dụng để che đi độ trễ mạng. Giảm hiện tượng giật và làm Trò chơi trực tuyến ít tốn CPU hơn, nhưng đổi lại sẽ có độ trễ điều khiển rõ rệt."
+   "Frames of deliberate local delay to mask latency; higher values add input lag but keep gameplay stable."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Số khung hình trễ điều khiển mà trò chơi trực tuyến sử dụng để che đi độ trễ mạng.\nKhi chơi trò chơi trực tuyến, tùy chọn này sẽ trì hoãn điều khiển cục bộ, giúp khung hình đang chạy gần hơn với các khung hình nhận từ mạng. Điều này giảm hiện tượng giật và làm trò chơi trực tuyến ít tốn CPU hơn, nhưng đổi lại có độ trễ điều khiển rõ rệt."
+   "Number of frames that GekkoNet delays local inputs before simulation. Raising this hides jitter and reduces CPU spikes, but increases input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Phạm vi số khung hình trễ điều khiển"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Phạm vi số khung hình độ trễ đầu vào có thể được dùng để che giấu độ trễ mạng. Giảm giật hình và làm cho chơi mạng ít tốn CPU hơn, nhưng phải đánh đổi bằng độ trễ điều khiển khó đoán."
+   "How far the local delay may expand automatically to absorb latency spikes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Phạm vi số khung hình độ trễ điều khiển có thể được dùng bởi mạng để ẩn độ trễ mạng.\nNếu được đặt, chơi mạng sẽ điều chỉnh số khung hình độ trễ điều khiển một cách linh hoạt để cân bằng thời gian CPU, độ trễ điều khiển và độ trễ mạng. Điều này giảm giật hình và làm cho chơi mạng ít tốn CPU hơn, nhưng phải đánh đổi bằng độ trễ điều khiển khó đoán."
+   "Maximum extra frames GekkoNet may borrow for prediction when network jitter occurs. Higher values smooth stutter at the cost of variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,

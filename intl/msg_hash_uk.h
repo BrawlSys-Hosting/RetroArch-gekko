@@ -7371,27 +7371,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Використовувати сервер ретрансляції"
+   "Relay Server (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Пересилання мережевих з'єднань через людино-середній сервер. Корисно, якщо хост стоїть за брандмауером або має проблеми NAT/UPnP."
+   "Legacy relay toggle preserved for backward compatibility."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Адреса сервера ретрансляції"
+   "Desync Handling"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Виберіть конкретний сервер для використання. Географічно ближче розташування має нижчу затримку."
+   "Strategy applied when peers fall out of sync (auto, rewind, spectator-only, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Адреса сервера сервера користувацької станції"
+   "Legacy Relay Override"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Введіть адресу вашого користувальницького сервера естафетів. Формат: адресу або адресу|порту."
+   "Obsolete relay server address used by classic MITM workflows."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7499,19 +7499,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Дозволити клієнтам слов'янський режим"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Дозволити підключення в режимі раба. Для роботи в режимі \"Слабкий режим\" клієнти потребують дуже мало переробки енергії на обох сторінках, але це значно вплине на затримку мережі."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Заборонити клієнтам неслов'янський режим"
+   "Spectator Limit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Заборонити підключення не в режимі раба. Не рекомендовано, окрім дуже швидких мереж з дуже слабкими машинами."
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -7527,27 +7527,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Кадри затримки вводу"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Кількість кадрів затримки для мережевої гри, щоб приховати затримку в мережі. Зменшує тремтіння і зменшує вплив мережевої гри на процесор за рахунок помітного відставання вводу."
+   "Frames of deliberate local delay to mask latency; higher values add input lag but keep gameplay stable."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Кількість кадрів затримки, що використовуються в Інтернеті, щоб приховати затримку в мережі.\nУ сітці цей параметр затримує локальний ввід, так що процесор знаходиться ближче до кадру, отриманих із мережі. Це зменшує jitter і робить мережеві мережі менш інтенсивними, але за ці[...]"
+   "Number of frames that GekkoNet delays local inputs before simulation. Raising this hides jitter and reduces CPU spikes, but increases input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Діапазон кадрів затримки вводу"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Діапазон затримки введення, які можуть використовуватися для приховування затримки в мережі. Зменшує jitter і робить мережеву мережу менш інтенсивним процесора, за рахунок непередбачуваного відставання введення."
+   "How far the local delay may expand automatically to absorb latency spikes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Діапазон затримки введення, які можуть використовуватися мережею, щоб приховати затримку в мережі.\nЯкщо встановлено, то netplay налаштує кількість кадрів з динамічно введення до балансу, затримка тексту процесора, затримка введення і мережевої мережі. Це зменшує jitter і робит[...]"
+   "Maximum extra frames GekkoNet may borrow for prediction when network jitter occurs. Higher values smooth stutter at the cost of variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
