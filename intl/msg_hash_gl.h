@@ -7387,27 +7387,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Use o servidor de retransmisión"
+   "Relay Server (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Reenviar as conexións de xogo en rede a través dun servidor intermediario (man-in-the-middle). Útil se o servidor está detrás dunha devasa (firewall) ou ten problemas con NAT/UPnP."
+   "Legacy relay toggle preserved for backward compatibility."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Localización do servidor de retransmisión"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
+   "Desync Handling"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Escolla un servidor de retransmisión específico para usar. As localizacións xeograficamente máis próximas tenden a ter unha latencia máis baixa."
+   MENU_ENUM_SUBLABEL_NETPLAY_DESYNC_HANDLING,
+   "Choose how GekkoNet reacts when rollback cannot resync automatically (auto catch-up, notify-only, halt, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Enderezo de servidor de retransmisión personalizado"
+   "Legacy Relay Override"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Introduza aquí o enderezo do seu servidor de retransmisión personalizado. Formato: enderezo ou enderezo|porto."
+   "Obsolete relay server address used by classic MITM workflows."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7523,55 +7523,55 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Permitir clientes en modo escravo"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Permitir conexións en modo escravo. Os clientes en modo escravo requiren moi pouca potencia de procesamento por cada lado, pero sufrirán significativamente a latencia da rede."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Non permitir clientes en modo non escravo"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_LIMIT,
+   "Spectator Limit"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Non permitir conexións non en modo escravo. Non recomendado excepto para redes moi rápidas con máquinas moi débiles."
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATOR_LIMIT,
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Xogo en Rede comproba Fotogramas"
+   "Compatibility Sync Check (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "A frecuencia (en fotogramas) co xogo en rede verificará que o anfitrión e o cliente están sincronizados."
+   "Legacy deterministic sync interval; rollback sessions can usually leave this at zero."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "A frecuencia en fotogramas coa que o xogo en rede verificará co anfitrión e o cliente están sincronizados. Na maioría dos núcleos, este valor non terá ningún efecto visible e pódese ignorar. Con núcleos non deterministas, este valor determina a frecuencia con que se sincronizarán os pares de xogo en rede. Con núcleos con erros, establecer este valor en calquera valor distinto de cero causará graves problemas de rendemento. Establécese a cero para non realizar comprobacións. Este va[...]"
+   "Legacy deterministic netplay checks. Rollback already reconciles desyncs automatically, so keep this at zero unless you are hosting an older lockstep core that still requires periodic verification."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Fotogramas de latencia de entrada"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "O número de fotogramas de latencia de entrada que netplay debe usar para ocultar a latencia da rede. Reduce o nerviosismo e fai que a reprodución en rede sexa menos intensiva en CPU, a costa dun retraso de entrada notable."
+   "Baseline rollback delay applied to local inputs before simulation. Higher values add latency but absorb sustained jitter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "O número de fotogramas de latencia de entrada que netplay se utiliza para ocultar a latencia da rede.\nCando está en netplay, esta opción atrasa a entrada local, de xeito que o fotograma que se está a executar estea máis preto dos fotogramas que se reciben da rede. Isto reduce o nerviosismo e fai que o xogo en rede sexa menos intensivo en CPU, pero ao prezo dun retraso de entrada notable."
+   "Number of frames that GekkoNet holds local inputs before advancing the simulation. Increase to trade responsiveness for stability when regular latency spikes occur."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Rango de fotogramas de latencia de entrada"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "O intervalo de fotogramas de latencia de entrada que se poden usar para ocultar a latencia da rede. Reduce o nerviosismo e fai que a reprodución en rede sexa menos intensiva en CPU, a costa dun atraso de entrada imprevisible."
+   "How many extra frames GekkoNet may borrow automatically when latency spikes beyond the base delay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "O intervalo de fotogramas de latencia de entrada que pode usar xogo en rede para ocultar a latencia da rede.\nSe se establece, xogo en rede axustará o número de fotogramas de latencia de entrada de forma dinámica para equilibrar o tempo da CPU, a latencia de entrada e a latencia da rede. Isto reduce o nerviosismo e fai que o xogo en rede sexa menos intensivo en CPU, pero ao prezo dun retardo de entrada imprevisible."
+   "Maximum additional frames GekkoNet can temporarily add on top of the base delay. Larger windows smooth sudden spikes but introduce more variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -8455,19 +8455,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Conéctate ao Xogo en Rede do Anfitrión"
+   "Join GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Introduza o enderezo do servidor do Xogo en Rede e conéctese no modo cliente."
+   "Connect to a GekkoNet host using the address below and watch the rollback status as the handshake progresses."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Desconectar do Xogo en Rede Anfitrión"
+   "Leave GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Desconecta unha conexión de xogo en rede activa."
+   "Terminate the active GekkoNet session and return to offline play."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -8487,30 +8487,30 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Actualizar a lista de hosts de Netplay"
+   "Refresh GekkoNet Rooms"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Actualizar a lista de servidores de Xogo en Rede."
+   "Query GekkoNet matchmaking for an updated list of public sessions."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Actualizar a lista LAN de Xogo en Rede"
+   "Refresh LAN Sessions"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Busca servidores de xogo en rede na LAN."
+   "Scan the local network for rollback hosts advertising over LAN."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Comezar Servidor de Xogo en Rede"
+   "Host GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Inicia a reprodución en rede no modo Anfitrión (servidor)."
+   "Launch a rollback server using the settings below."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,

@@ -867,7 +867,7 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Enables netplay in client mode."
+   "Connect to a GekkoNet host using the address below and watch the rollback status as the handshake progresses."
    )
 
 /* Netplay > Host */

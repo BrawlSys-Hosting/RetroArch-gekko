@@ -50,12 +50,6 @@ typedef struct netplay_client_info
    char     name[NETPLAY_NICK_LEN];
 } netplay_client_info_t;
 
-typedef struct mitm_server
-{
-   const char *name;
-   enum msg_hash_enums description;
-} mitm_server_t;
-
 #ifndef HAVE_DYNAMIC
 struct netplay_fork_args
 {
@@ -165,7 +159,17 @@ typedef struct
    uint8_t flags;
    char server_address_deferred[256];
    char server_session_deferred[32];
+   char session_status[128];
+   unsigned session_sync_current;
+   unsigned session_sync_total;
 } net_driver_state_t;
+
+typedef struct netplay_session_status_info
+{
+   char message[128];
+   unsigned session_sync_current;
+   unsigned session_sync_total;
+} netplay_session_status_info_t;
 
 net_driver_state_t *networking_state_get_ptr(void);
 
@@ -212,5 +216,4 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state,
    void *data);
 #endif
 
-extern const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS];
 #endif
