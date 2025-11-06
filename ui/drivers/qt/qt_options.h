@@ -489,10 +489,6 @@ class NetplayPage : public OptionsPage
 public:
    NetplayPage(QObject *parent = nullptr);
    QWidget *widget();
-private slots:
-   void onRadioButtonClicked(int);
-private:
-   QGroupBox* createMitmServerGroup();
 };
 
 class UpdaterPage : public OptionsPage

@@ -1,7 +1,6 @@
 #include <QApplication>
 #include <QLabel>
 #include <QStackedWidget>
-#include <QButtonGroup>
 
 #include "qt_options.h"
 #include "qt_dialogs.h"
@@ -445,7 +444,6 @@ QWidget *NetplayPage::widget()
    FormLayout *checksLayout   = new FormLayout;
    QGroupBox *serverGroup     = new QGroupBox("Server");
    SettingsGroup *syncGroup   = new SettingsGroup("Synchronization");
-   SettingsGroup *slaveGroup  = new SettingsGroup("Slave-Mode");
    SettingsGroup *inputGroup  = new SettingsGroup("Input Sharing");
    SettingsGroup *deviceGroup = new SettingsGroup("Device Request");
    FormLayout *serverForm     = new FormLayout;
@@ -469,19 +467,16 @@ QWidget *NetplayPage::widget()
    serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_PASSWORD));
    serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD));
    serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER));
 
-   serverLayout->addWidget(createMitmServerGroup());
-   serverLayout->addSpacing(30);
    serverLayout->addLayout(serverForm);
 
    serverGroup->setLayout(serverLayout);
 
-   slaveGroup->add(MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES);
-   slaveGroup->add(MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES);
-
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE);
+   syncGroup->add(MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES);
 
    inputGroup->add(MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL);
    inputGroup->add(MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG);
@@ -502,10 +497,9 @@ QWidget *NetplayPage::widget()
 
    layout->addLayout(checksLayout, 0, 0, 1, 2);
    layout->addWidget(serverGroup, 1, 0, 1, 2);
-   layout->addWidget(slaveGroup, 2, 0, 1, 1);
-   layout->addWidget(syncGroup, 2, 1, 2, 1);
-   layout->addWidget(inputGroup, 3, 0, 1, 1);
-   layout->addWidget(deviceGroup, 4, 0, 1, 2);
+   layout->addWidget(syncGroup, 2, 0, 1, 1);
+   layout->addWidget(inputGroup, 2, 1, 1, 1);
+   layout->addWidget(deviceGroup, 3, 0, 1, 2);
 
    mainLayout->addLayout(layout);
 
@@ -514,59 +508,6 @@ QWidget *NetplayPage::widget()
    widget->setLayout(mainLayout);
 
    return widget;
-}
-
-QGroupBox *NetplayPage::createMitmServerGroup()
-{
-   size_t i;
-   const char *netplay_mitm_server;
-   CheckableSettingsGroup *groupBox = new CheckableSettingsGroup(
-      MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER);
-   QButtonGroup *buttonGroup        = new QButtonGroup(this);
-   rarch_setting_t *setting         = menu_setting_find_enum(
-      MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
-
-   if (!setting)
-      return nullptr;
-
-   netplay_mitm_server = setting->value.target.string;
-
-   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
-   {
-      const mitm_server_t *server      = &netplay_mitm_server_list[i];
-      QRadioButton        *radioButton = new QRadioButton(
-         msg_hash_to_str(server->description));
-
-      if (string_is_equal(server->name, netplay_mitm_server))
-         radioButton->setChecked(true);
-
-      buttonGroup->addButton(radioButton, i);
-      groupBox->addRow(radioButton);
-   }
-
-   groupBox->add(MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER);
-
-#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
-   connect(buttonGroup, &QButtonGroup::idClicked, this,
-         &NetplayPage::onRadioButtonClicked);
-#else
-   connect(buttonGroup, SIGNAL(buttonClicked(int)), this,
-      SLOT(onRadioButtonClicked(int)));
-#endif
-
-   return groupBox;
-}
-
-void NetplayPage::onRadioButtonClicked(int id)
-{
-   rarch_setting_t *setting =
-      menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER);
-
-   if (!setting)
-      return;
-
-   strlcpy(setting->value.target.string,
-         netplay_mitm_server_list[id].name, setting->size);
 }
 
 UpdaterPage::UpdaterPage(QObject *parent) :

@@ -6250,40 +6250,6 @@ static int menu_displaylist_parse_input_description_list(
    return count;
 }
 
-#ifdef HAVE_NETWORKING
-static unsigned menu_displaylist_parse_netplay_mitm_server_list(
-      file_list_t *info_list, const char *netplay_mitm_server)
-{
-   size_t i;
-   unsigned count                  = 0;
-   struct menu_state *menu_st      = menu_state_get_ptr();
-
-   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
-   {
-      const mitm_server_t *server = &netplay_mitm_server_list[i];
-
-      if (menu_entries_append(info_list,
-            msg_hash_to_str(server->description), server->name,
-            MENU_ENUM_LABEL_NETPLAY_MITM_SERVER_LOCATION,
-            MENU_SETTING_DROPDOWN_ITEM_NETPLAY_MITM_SERVER,
-            0, i, NULL))
-      {
-         if (string_is_equal(server->name, netplay_mitm_server))
-         {
-            menu_file_list_cbs_t *cbs  =
-               (menu_file_list_cbs_t*)info_list->list[count].actiondata;
-            if (cbs)
-               cbs->checked            = true;
-            menu_st->selection_ptr     = count;
-         }
-
-         count++;
-      }
-   }
-
-   return count;
-}
-#endif
 
 static int menu_displaylist_parse_input_description_kbd_list(
       file_list_t *info_list, unsigned info_type, settings_t *settings)
@@ -7012,9 +6978,21 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
-   if (      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
-         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL)
-         &&  netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+   if (menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+         MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
+         MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
    {
       if (menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
@@ -7025,23 +7003,9 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
    }
 
    if (menu_entries_append(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
-         MENU_SETTING_ACTION, 0, 0, NULL))
-      count++;
-
-   if (menu_entries_append(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS),
          MENU_ENUM_LABEL_NETWORK_SETTINGS,
-         MENU_SETTING_ACTION, 0, 0, NULL))
-      count++;
-
-   if (menu_entries_append(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS),
-         MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS,
          MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
@@ -9135,16 +9099,12 @@ unsigned menu_displaylist_build_list(
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
          {
             unsigned user;
-            bool netplay_allow_slaves    = settings->bools.netplay_allow_slaves;
-            bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
             bool network_cmd_enable      = settings->bools.network_cmd_enable;
             bool network_remote_enable   = settings->bools.network_remote_enable;
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,            PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,            PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                PARSE_ONLY_STRING, false},
-               {MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,         PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,                 PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,               PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,            PARSE_ONLY_UINT,   true},
@@ -9156,8 +9116,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_NAME,            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_MSG,             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,              PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,               PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,             PARSE_ONLY_BOOL,   false},
+               {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,               PARSE_ONLY_INT,    true},
                {MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,   PARSE_ONLY_INT,    true},
                {MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE, PARSE_ONLY_INT,    true},
@@ -9165,24 +9124,6 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL,              PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG,               PARSE_ONLY_UINT,   true},
             };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               switch (build_list[i].enum_idx)
-               {
-                  case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
-                     if (netplay_allow_slaves)
-                        build_list[i].checked = true;
-                     break;
-                  case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-                  case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
-                     if (netplay_use_mitm_server)
-                        build_list[i].checked = true;
-                     break;
-                  default:
-                     break;
-               }
-            }
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
@@ -9242,26 +9183,6 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)
                count++;
-         }
-         break;
-      case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
-         {
-            menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,     PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_INSTALLED_CORES, PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,           PARSE_ONLY_BOOL, true},
-            };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               if (!build_list[i].checked && !include_everything)
-                  continue;
-
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     build_list[i].enum_idx, build_list[i].parse_type,
-                     false) == 0)
-                  count++;
-            }
          }
          break;
       case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
@@ -12311,22 +12232,16 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
             {
                size_t i;
                file_list_t *list            = info->list;
-               bool netplay_allow_slaves    = settings->bools.netplay_allow_slaves;
-               bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
-
                menu_displaylist_build_info_selective_t build_list[] = {
                   {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,       PARSE_ONLY_UINT,   true},
                   {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,    PARSE_ONLY_UINT,   true},
                   {MENU_ENUM_LABEL_NETPLAY_MAX_PING,           PARSE_ONLY_UINT,   true},
                   {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,    PARSE_ONLY_BOOL,   true},
-                  {MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,    PARSE_ONLY_BOOL,   true},
-                  {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,        PARSE_ONLY_STRING, false},
-                  {MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER, PARSE_ONLY_STRING, false},
+                  {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,        PARSE_ONLY_STRING, true},
                   {MENU_ENUM_LABEL_NETPLAY_PASSWORD,           PARSE_ONLY_STRING, true},
                   {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,  PARSE_ONLY_STRING, true},
                   {MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,      PARSE_ONLY_BOOL,   true},
-                  {MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,       PARSE_ONLY_BOOL,   true},
-                  {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,     PARSE_ONLY_BOOL,   false},
+                  {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,     PARSE_ONLY_UINT,   true},
                   {MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,      PARSE_ONLY_BOOL,   true},
                };
 
@@ -12367,26 +12282,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
 
                for (i = 0; i < ARRAY_SIZE(build_list); i++)
                {
-                  switch (build_list[i].enum_idx)
-                  {
-                     case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
-                        if (netplay_allow_slaves)
-                           build_list[i].checked = true;
-                        break;
-                     case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-                     case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
-                        if (netplay_use_mitm_server)
-                           build_list[i].checked = true;
-                        break;
-                     default:
-                        break;
-                  }
-               }
-
-               for (i = 0; i < ARRAY_SIZE(build_list); i++)
-               {
-                  if (!build_list[i].checked)
-                     continue;
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                            build_list[i].enum_idx, build_list[i].parse_type,
                            false) == 0)
@@ -14599,25 +14494,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                                  | MD_FLAG_NEED_PUSH;
             break;
 #endif
-#ifdef HAVE_NETWORKING
-         case DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER:
-            menu_entries_clear(info->list);
-            count              = menu_displaylist_parse_netplay_mitm_server_list(
-                  info->list,
-                  settings->arrays.netplay_mitm_server);
-
-            if (count == 0)
-               if (menu_entries_append(info->list,
-                        msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY),
-                        msg_hash_to_str(MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY),
-                        MENU_ENUM_LABEL_NO_ENTRIES_TO_DISPLAY,
-                        0, 0, 0, NULL))
-                  count++;
-
-            info->flags       |= MD_FLAG_NEED_REFRESH
-                               | MD_FLAG_NEED_PUSH;
-            break;
-#endif
          case DISPLAYLIST_SAVING_SETTINGS_LIST:
          case DISPLAYLIST_CLOUD_SYNC_SETTINGS_LIST:
          case DISPLAYLIST_DRIVER_SETTINGS_LIST:
@@ -14676,7 +14552,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST:
          case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
          case DISPLAYLIST_NETWORK_SETTINGS_LIST:
-         case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
          case DISPLAYLIST_OPTIONS_CHEATS:
          case DISPLAYLIST_NETWORK_INFO:
          case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
