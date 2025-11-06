@@ -7099,27 +7099,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "启用代理服务器"
+   "Relay Server (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "通过代理服务器进行网络连接。如果主机位于\n防火墙之后或具有NAT／UPnP问题时，建议开启。"
+   "Legacy relay toggle preserved for backward compatibility."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "代理服务器位置"
+   "Desync Handling"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "选择一个代理服务器。服务器位置较近的\n一般网络延迟更低。"
+   "Strategy applied when peers fall out of sync (auto, rewind, spectator-only, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "自定义代理服务器地址"
+   "Legacy Relay Override"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "在此输入您自定义代理服务器的地址。格式：地址或地址|端口。"
+   "Obsolete relay server address used by classic MITM workflows."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7235,19 +7235,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "允许从属模式客户端"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "允许从属模式连接。从属模式客户端各自都只需极小的性能，但是会受到网络延迟的严重影响。"
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "只允许从属模式客户端"
+   "Spectator Limit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "不允许非从属模式连接。一般不推荐，除非您的网络极快但硬件性能极差。"
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -7263,27 +7263,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "输入延迟帧"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "设定按键输入延迟帧数, 用于掩盖网络延迟, 可降低CPU使用率并减少画面误差, 代价是很明显的按键延迟。"
+   "Frames of deliberate local delay to mask latency; higher values add input lag but keep gameplay stable."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "用于隐藏网络延迟的输入延迟帧数。\n在netplay中，此选项会延迟本地输入，所以正在运行的帧靠近从网络收到的帧。 这减少了喷雾器，并使得净化降低了CPU强度，但是以明显的输入滞后为代价。"
+   "Number of frames that GekkoNet delays local inputs before simulation. Raising this hides jitter and reduces CPU spikes, but increases input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "输入延迟帧范围"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "设置按键延迟范围以掩盖网络的延迟。\n用一定的按键延迟换取在线游戏时\n降低 CPU 负载并减少顿卡。"
+   "How far the local delay may expand automatically to absorb latency spikes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "用于隐藏网络延迟的输入延迟帧范围。\n如果设置，netplay将动态调整输入延迟的帧数，以平衡CPU时间、输入延迟和网络延迟。 这就减少了喷雾器，减少了净值，但是以不可预测的输入滞后为代价。"
+   "Maximum extra frames GekkoNet may borrow for prediction when network jitter occurs. Higher values smooth stutter at the cost of variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,

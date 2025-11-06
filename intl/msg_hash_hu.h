@@ -7471,27 +7471,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Átjátszó szerver használata"
+   "Relay Server (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Netplay kapcsolatok továbbítása egy harmadik szerveren keresztül. Akkor hasznos, ha a kiszolgáló tűzfal mögött van, vagy NAT/UPnP problémái vannak."
+   "Legacy relay toggle preserved for backward compatibility."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Átjátszó szerver helye"
+   "Desync Handling"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "A használandó átjátszó szerver. Földrajzilag közelebbi helyek általában kisebb késleltetést eredményeznek."
+   "Strategy applied when peers fall out of sync (auto, rewind, spectator-only, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Egyedi átjátszó szerver címe"
+   "Legacy Relay Override"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Az egyedi átjátszó szerver címe. Formátum: cím, vagy cím|port."
+   "Obsolete relay server address used by classic MITM workflows."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7607,19 +7607,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Slave módú kliensek"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Slave módú kliensek engedélyezése. Ezek mindkét oldaltól kevés teljesítményt igényelnek, de nagyon érzékenyek a hálózat késleltetésére."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Kizárólag slave módú kliensek engedélyezése"
+   "Spectator Limit"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "A nem slave módú kliensek nem csatlakozhatnak. Csak akkor ajánlott, ha a hálózat nagyon gyors, a gépek pedig nagyon gyengék."
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
@@ -7635,27 +7635,27 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Bemeneti késleltetés képkockái"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "A bemeneti késleltetés mértéke képkockában, amit a netplay arra használhat, hogy a hálózati késleltetést elrejtse. Csökkenti a rángatást és a CPU használatot, érezhető bemeneti késés árán."
+   "Frames of deliberate local delay to mask latency; higher values add input lag but keep gameplay stable."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "A bemeneti késleltetés képkockáinak száma, amit a netplay a hálózati késleltetés elrejtéséhez használ.\nNetplay közben ez a beállítás késlelteti a helyi bemenetet, hogy a lefuttatott képkocka közelebb legyen a hálózatról fogadott képkockákhoz.\nCsökkenti a rángatást és kevésbé CPU-igényessé teszi a netplay-t, de észrevehető bemeneti késleltetés árán."
+   "Number of frames that GekkoNet delays local inputs before simulation. Raising this hides jitter and reduces CPU spikes, but increases input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Bemeneti késleltetés tartománya"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "A bemeneti késleltetés tartománya képkockában, amit a netplay arra használhat, hogy a hálózati késleltetést elrejtse. Csökkenti a rángatást és a CPU használatot, érezhető bemeneti késés árán."
+   "How far the local delay may expand automatically to absorb latency spikes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "A bemeneti késleltetés tartománya képkockában, amit a netplay arra használhat, hogy a hálózati késleltetést elrejtse.\nHa be van állítva, akkor a netplay dinamikusan állítja a bemeneti késleltetés képkockáinak számát, a CPU idő, bemeneti késleltetés és hálózati késleltetés egyensúlyba hozásához. Csökkenti a rángatást és a CPU használatot, előre nem jósolható bemeneti késés árán."
+   "Maximum extra frames GekkoNet may borrow for prediction when network jitter occurs. Higher values smooth stutter at the cost of variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,

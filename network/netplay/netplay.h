@@ -50,12 +50,6 @@ typedef struct netplay_client_info
    char     name[NETPLAY_NICK_LEN];
 } netplay_client_info_t;
 
-typedef struct mitm_server
-{
-   const char *name;
-   enum msg_hash_enums description;
-} mitm_server_t;
-
 #ifndef HAVE_DYNAMIC
 struct netplay_fork_args
 {
@@ -212,5 +206,4 @@ bool netplay_discovery_driver_ctl(enum rarch_netplay_discovery_ctl_state state,
    void *data);
 #endif
 
-extern const mitm_server_t netplay_mitm_server_list[NETPLAY_MITM_SERVERS];
 #endif
