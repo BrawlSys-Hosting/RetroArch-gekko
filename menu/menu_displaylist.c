@@ -6978,9 +6978,21 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
          MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
-   if (      netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL)
-         && !netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_SERVER, NULL)
-         &&  netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_CONNECTED, NULL))
+   if (menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_HOST,
+         MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (menu_entries_append(list,
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
+         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
+         MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
+         MENU_SETTING_ACTION, 0, 0, NULL))
+      count++;
+
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
    {
       if (menu_entries_append(list,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT),
@@ -6991,23 +7003,9 @@ static unsigned menu_displaylist_netplay_refresh_rooms(file_list_t *list)
    }
 
    if (menu_entries_append(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT),
-         MENU_ENUM_LABEL_NETPLAY_ENABLE_CLIENT,
-         MENU_SETTING_ACTION, 0, 0, NULL))
-      count++;
-
-   if (menu_entries_append(list,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS),
          msg_hash_to_str(MENU_ENUM_LABEL_NETWORK_SETTINGS),
          MENU_ENUM_LABEL_NETWORK_SETTINGS,
-         MENU_SETTING_ACTION, 0, 0, NULL))
-      count++;
-
-   if (menu_entries_append(list,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS),
-         msg_hash_to_str(MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS),
-         MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS,
          MENU_SETTING_ACTION, 0, 0, NULL))
       count++;
 
@@ -9185,26 +9183,6 @@ unsigned menu_displaylist_build_list(
                   MENU_ENUM_LABEL_STDIN_CMD_ENABLE,
                   PARSE_ONLY_BOOL, false) == 0)
                count++;
-         }
-         break;
-      case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
-         {
-            menu_displaylist_build_info_selective_t build_list[] = {
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_CONNECTABLE,     PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_ONLY_INSTALLED_CORES, PARSE_ONLY_BOOL, true},
-               {MENU_ENUM_LABEL_NETPLAY_SHOW_PASSWORDED,           PARSE_ONLY_BOOL, true},
-            };
-
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               if (!build_list[i].checked && !include_everything)
-                  continue;
-
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                     build_list[i].enum_idx, build_list[i].parse_type,
-                     false) == 0)
-                  count++;
-            }
          }
          break;
       case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
@@ -14574,7 +14552,6 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
          case DISPLAYLIST_CHEAT_DETAILS_SETTINGS_LIST:
          case DISPLAYLIST_CHEAT_SEARCH_SETTINGS_LIST:
          case DISPLAYLIST_NETWORK_SETTINGS_LIST:
-         case DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST:
          case DISPLAYLIST_OPTIONS_CHEATS:
          case DISPLAYLIST_NETWORK_INFO:
          case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:

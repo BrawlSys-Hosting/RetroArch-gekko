@@ -425,8 +425,6 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY_KICK_LIST;
       case ACTION_OK_DL_NETPLAY_BAN_LIST:
          return MENU_ENUM_LABEL_DEFERRED_NETPLAY_BAN_LIST;
-      case ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST:
-         return MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST;
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_SUBSYSTEM_SETTINGS_LIST;
       case ACTION_OK_DL_NETWORK_SETTINGS_LIST:
@@ -1789,7 +1787,6 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST:
       case ACTION_OK_DL_NETPLAY_KICK_LIST:
       case ACTION_OK_DL_NETPLAY_BAN_LIST:
-      case ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST:
       case ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST:
       case ACTION_OK_DL_BLUETOOTH_SETTINGS_LIST:
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
@@ -6507,7 +6504,6 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_network_list, ACTION_OK_DL_NETWORK_SETTI
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_network_hosting_list, ACTION_OK_DL_NETWORK_HOSTING_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_kick_list, ACTION_OK_DL_NETPLAY_KICK_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_ban_list, ACTION_OK_DL_NETPLAY_BAN_LIST)
-STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_netplay_lobby_filters_list, ACTION_OK_DL_NETPLAY_LOBBY_FILTERS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_subsystem_list, ACTION_OK_DL_SUBSYSTEM_SETTINGS_LIST)
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_database_manager_list, ACTION_OK_DL_DATABASE_MANAGER_LIST)
 #ifdef HAVE_BLUETOOTH
@@ -8300,48 +8296,85 @@ static int action_ok_manual_content_scan_start(const char *path,
 static int action_ok_netplay_enable_host(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
-   if (command_event(CMD_EVENT_NETPLAY_ENABLE_HOST, NULL))
-      return generic_action_ok_command(CMD_EVENT_RESUME);
+   net_driver_state_t *net_st = networking_state_get_ptr();
 
-   return -1;
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL))
+      return -1;
+
+   if (!command_event(CMD_EVENT_NETPLAY_INIT, NULL))
+   {
+      netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+      if (net_st)
+      {
+         net_st->session_status[0]  = '\0';
+         net_st->session_sync_current = 0;
+         net_st->session_sync_total   = 0;
+      }
+      return -1;
+   }
+
+   if (net_st)
+   {
+      const char *status = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST);
+
+      if (string_is_empty(status))
+         status = "Hosting session";
+
+      strlcpy(net_st->session_status, status,
+            sizeof(net_st->session_status));
+      net_st->session_sync_current = 0;
+      net_st->session_sync_total   = 0;
+   }
+
+   return generic_action_ok_command(CMD_EVENT_RESUME);
 }
 
 static void action_ok_netplay_enable_client_hostname_cb(void *userdata,
       const char *line)
 {
-   if (!string_is_empty(line))
+   bool success               = false;
+   net_driver_state_t *net_st = networking_state_get_ptr();
+
+   if (!string_is_empty(line)
+         && netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL))
    {
-      if (netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
+      char status[256];
+
+      status[0] = '\0';
+
+      if (net_st)
       {
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void*)line);
-         menu_input_dialog_end();
-         retroarch_menu_running_finished(false);
+         snprintf(status, sizeof(status), "Connecting to %s", line);
+         strlcpy(net_st->session_status, status,
+               sizeof(net_st->session_status));
+         net_st->session_sync_current = 0;
+         net_st->session_sync_total   = 0;
       }
-      else if (!task_push_netplay_content_reload(line))
+
+      success = command_event(CMD_EVENT_NETPLAY_INIT_DIRECT, (void*)line);
+
+      if (!success)
       {
-#ifdef HAVE_DYNAMIC
-         const char *_msg = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NETPLAY_START_WHEN_LOADED);
-         command_event(CMD_EVENT_NETPLAY_DEINIT, NULL);
-         netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
-         command_event(CMD_EVENT_NETPLAY_INIT_DIRECT_DEFERRED, (void*)line);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-#else
-         const char *_msg = msg_hash_to_str(MSG_NETPLAY_NEED_CONTENT_LOADED);
-         runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-#endif
-         menu_input_dialog_end();
-      }
-      else
-      {
-         menu_input_dialog_end();
-         retroarch_menu_running_finished(false);
+         const char *_msg = msg_hash_to_str(MSG_NETPLAY_FAILED);
+
+         netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+         if (net_st)
+         {
+            net_st->session_status[0]  = '\0';
+            net_st->session_sync_current = 0;
+            net_st->session_sync_total   = 0;
+         }
+         if (_msg)
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 480, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT,
+                  MESSAGE_QUEUE_CATEGORY_WARNING);
       }
    }
-   else
-      menu_input_dialog_end();
+
+   menu_input_dialog_end();
+
+   if (success)
+      retroarch_menu_running_finished(false);
 }
 
 static int action_ok_netplay_enable_client(const char *path,
@@ -9324,7 +9357,6 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_NETWORK_HOSTING_SETTINGS,            action_ok_network_hosting_list},
          {MENU_ENUM_LABEL_NETPLAY_KICK,                        action_ok_netplay_kick_list},
          {MENU_ENUM_LABEL_NETPLAY_BAN,                         action_ok_netplay_ban_list},
-         {MENU_ENUM_LABEL_NETPLAY_LOBBY_FILTERS,               action_ok_netplay_lobby_filters_list},
          {MENU_ENUM_LABEL_SUBSYSTEM_SETTINGS,                  action_ok_subsystem_list},
          {MENU_ENUM_LABEL_NETWORK_SETTINGS,                    action_ok_network_list},
          {MENU_ENUM_LABEL_LAKKA_SERVICES,                      action_ok_lakka_services},

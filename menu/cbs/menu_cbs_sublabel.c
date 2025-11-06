@@ -982,7 +982,44 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_sublabels,                
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_navigation_wraparound,                 MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_quality,               MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_host,                   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_client,                 MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT)
+static int action_bind_sublabel_netplay_enable_client(file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   const char *base            = msg_hash_to_str(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT);
+   const char *status_label    = msg_hash_to_str(MENU_ENUM_LABEL_STATUS);
+   net_driver_state_t *net_st  = networking_state_get_ptr();
+   const char *status_value    = NULL;
+   size_t written              = 0;
+
+   (void)list;
+   (void)type;
+   (void)i;
+   (void)label;
+   (void)path;
+
+   if (base)
+      written = strlcpy(s, base, len);
+   else if (len > 0)
+      s[0] = '\0';
+
+   if (net_st && !string_is_empty(net_st->session_status))
+      status_value = net_st->session_status;
+   else
+      status_value = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+
+   if (!string_is_empty(status_value) && len > written)
+   {
+      if (string_is_empty(status_label))
+         status_label = "Status";
+
+      written += snprintf(s + written, len - written, "\n%s: %s",
+            status_label, status_value);
+   }
+
+   return 0;
+}
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_disconnect,                    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_kick,                          MENU_ENUM_SUBLABEL_NETPLAY_KICK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_ban,                           MENU_ENUM_SUBLABEL_NETPLAY_BAN)

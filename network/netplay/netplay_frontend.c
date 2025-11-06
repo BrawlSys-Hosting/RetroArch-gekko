@@ -19,6 +19,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -36,6 +37,7 @@
 #include "../../runloop.h"
 #include "../../runahead.h"
 #include "../../verbosity.h"
+#include "../../msg_hash.h"
 
 #include "netplay.h"
 
@@ -93,6 +95,34 @@ typedef struct netplay
 } netplay_t;
 
 static net_driver_state_t networking_driver_st;
+
+static void netplay_session_status_set(const char *status,
+      unsigned current, unsigned total)
+{
+   net_driver_state_t *net_st = &networking_driver_st;
+
+   if (!net_st)
+      return;
+
+   if (status)
+      strlcpy(net_st->session_status, status,
+            sizeof(net_st->session_status));
+   else
+      net_st->session_status[0] = '\0';
+
+   net_st->session_sync_current = current;
+   net_st->session_sync_total   = total;
+}
+
+static void netplay_session_status_reset(void)
+{
+   const char *fallback = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+
+   if (!fallback)
+      fallback = "";
+
+   netplay_session_status_set(fallback, 0, 0);
+}
 
 static void netplay_free(netplay_t *netplay)
 {
@@ -300,6 +330,7 @@ static void netplay_handle_session_events(netplay_t *netplay)
 {
    int count = 0;
    GekkoSessionEvent **events;
+   char status_buf[128];
 
    if (!netplay || !netplay->session)
       return;
@@ -313,28 +344,58 @@ static void netplay_handle_session_events(netplay_t *netplay)
 
       switch (event->type)
       {
+         case PlayerSyncing:
+         {
+            unsigned current = (unsigned)event->data.syncing.current;
+            unsigned total   = (unsigned)event->data.syncing.max;
+
+            netplay->connected = true;
+
+            snprintf(status_buf, sizeof(status_buf),
+                  "Syncing players (%u/%u)", current, total);
+            netplay_session_status_set(status_buf, current, total);
+            break;
+         }
          case SessionStarted:
             netplay->session_started = true;
             netplay->connected       = true;
+            netplay_session_status_set(
+                  msg_hash_to_str(MSG_NETPLAY_STATUS_PLAYING), 0, 0);
             break;
          case PlayerConnected:
             netplay->connected       = true;
+            snprintf(status_buf, sizeof(status_buf),
+                  "Peer connected (handle %d)",
+                  event->data.connected.handle);
+            netplay_session_status_set(status_buf, 0, 0);
             break;
          case PlayerDisconnected:
             if (event->data.disconnected.handle == netplay->local_handle)
                netplay->connected = false;
+            snprintf(status_buf, sizeof(status_buf),
+                  "Peer disconnected (handle %d)",
+                  event->data.disconnected.handle);
+            netplay_session_status_set(status_buf, 0, 0);
             break;
          case SpectatorPaused:
             netplay->spectator = true;
+            netplay_session_status_set(
+                  msg_hash_to_str(MSG_NETPLAY_STATUS_SPECTATING), 0, 0);
             break;
          case SpectatorUnpaused:
             netplay->spectator = false;
+            netplay_session_status_set(
+                  msg_hash_to_str(MSG_NETPLAY_STATUS_PLAYING), 0, 0);
             break;
          case DesyncDetected:
             RARCH_WARN("[Netplay] Desync detected at frame %d (local 0x%08x remote 0x%08x).\n",
                   event->data.desynced.frame,
                   event->data.desynced.local_checksum,
                   event->data.desynced.remote_checksum);
+            snprintf(status_buf, sizeof(status_buf),
+                  "Desync detected (frame %d)",
+                  event->data.desynced.frame);
+            netplay_session_status_set(status_buf, 0, 0);
             break;
          default:
             break;
@@ -479,6 +540,7 @@ static void netplay_reset_state(netplay_t *netplay)
    netplay->session_started     = false;
    netplay->authoritative_valid = false;
    netplay->current_frame       = 0;
+   netplay_session_status_reset();
 }
 
 static bool netplay_begin_session(netplay_t *netplay,
@@ -577,6 +639,7 @@ void deinit_netplay(void)
    net_st->flags &= ~(NET_DRIVER_ST_FLAG_NETPLAY_ENABLED
          | NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT);
    net_st->latest_ping = -1;
+   netplay_session_status_reset();
 
 #if HAVE_RUNAHEAD
    preempt_init(runloop_state_get_ptr());

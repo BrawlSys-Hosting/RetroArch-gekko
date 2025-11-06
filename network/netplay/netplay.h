@@ -159,6 +159,9 @@ typedef struct
    uint8_t flags;
    char server_address_deferred[256];
    char server_session_deferred[32];
+   char session_status[128];
+   unsigned session_sync_current;
+   unsigned session_sync_total;
 } net_driver_state_t;
 
 net_driver_state_t *networking_state_get_ptr(void);
