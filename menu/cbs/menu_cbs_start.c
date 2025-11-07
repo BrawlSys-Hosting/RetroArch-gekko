@@ -340,16 +340,6 @@ static int action_start_shader_filter_pass(
 }
 #endif
 
-static int action_start_netplay_mitm_server(
-      const char *path, const char *label,
-      unsigned type, size_t idx, size_t entry_idx)
-{
-   settings_t *settings = config_get_ptr();
-   configuration_set_string(settings,
-         settings->arrays.netplay_mitm_server,
-         DEFAULT_NETPLAY_MITM_SERVER);
-   return 0;
-}
 
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
 static int action_start_shader_watch_for_changes(
@@ -839,9 +829,6 @@ static int menu_cbs_init_bind_start_compare_label(menu_file_list_cbs_t *cbs)
             break;
          case MENU_ENUM_LABEL_SCREEN_RESOLUTION:
             BIND_ACTION_START(cbs, action_start_video_resolution);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-            BIND_ACTION_START(cbs, action_start_netplay_mitm_server);
             break;
          case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
             BIND_ACTION_START(cbs, action_start_playlist_association);
