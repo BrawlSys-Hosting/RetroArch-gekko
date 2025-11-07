@@ -4195,7 +4195,7 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Prihlásiť sa k hostiteľovi sieťovej hry"
+   "Join GekkoNet Session"
    )
 
 /* Netplay > Host */

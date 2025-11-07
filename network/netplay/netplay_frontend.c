@@ -737,6 +737,21 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
          return true;
       case RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE:
          return net_st->core_netpacket_interface != NULL;
+      case RARCH_NETPLAY_CTL_GET_SESSION_STATUS:
+         if (!data)
+            return false;
+         else
+         {
+            netplay_session_status_info_t *status =
+               (netplay_session_status_info_t*)data;
+            if (!status)
+               return false;
+            strlcpy(status->message, net_st->session_status,
+                  sizeof(status->message));
+            status->session_sync_current = net_st->session_sync_current;
+            status->session_sync_total   = net_st->session_sync_total;
+         }
+         return true;
       case RARCH_NETPLAY_CTL_NONE:
       default:
          break;

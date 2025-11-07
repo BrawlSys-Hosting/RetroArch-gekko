@@ -164,6 +164,13 @@ typedef struct
    unsigned session_sync_total;
 } net_driver_state_t;
 
+typedef struct netplay_session_status_info
+{
+   char message[128];
+   unsigned session_sync_current;
+   unsigned session_sync_total;
+} netplay_session_status_info_t;
+
 net_driver_state_t *networking_state_get_ptr(void);
 
 bool netplay_compatible_version(const char *version);

@@ -7667,15 +7667,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Kiểm tra khung hình Trò chơi trực tuyến"
+   "Compatibility Sync Check (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "Tần số (tính theo khung hình) mà Trò chơi trực tuyến sẽ kiểm tra xem máy chủ và máy khách có đồng bộ hay không."
+   "Legacy deterministic sync interval; rollback sessions can usually leave this at zero."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "Tần số tính theo khung hình mà Trò chơi trực tuyến sẽ kiểm tra xem máy chủ và máy khách có đồng bộ hay không. Với hầu hết các core, giá trị này sẽ không có ảnh hưởng rõ rệt và có thể bỏ qua. Với các core không xác định được kết quả, giá trị này quyết định tần suất người chơi trực tiếp Trò chơi trực tuyến được đồng bộ hóa. Với các core bị lỗi, thiết lập giá trị khác 0 có[...]"
+   "Legacy deterministic netplay checks. Rollback already reconciles desyncs automatically, so keep this at zero unless you are hosting an older lockstep core that still requires periodic verification."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
@@ -8591,19 +8591,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Kết nối tới Máy chủ Trò chơi trực tuyến"
+   "Join GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Nhập địa chỉ máy chủ Trò chơi trực tuyến và kết nối ở chế độ máy khách."
+   "Connect to a GekkoNet host using the address below and watch the rollback status as the handshake progresses."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Ngắt kết nối khỏi Máy chủ Trò chơi trực tuyến"
+   "Leave GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Ngắt kết nối Trò chơi trực tuyến đang hoạt động."
+   "Terminate the active GekkoNet session and return to offline play."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -8623,30 +8623,30 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Làm mới danh sách máy chủ Trò chơi trực tuyến"
+   "Refresh GekkoNet Rooms"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Quét các máy chủ Trò chơi trực tuyến."
+   "Query GekkoNet matchmaking for an updated list of public sessions."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Làm mới danh sách Trò chơi trực tuyến trong mạng LAN"
+   "Refresh LAN Sessions"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Quét máy chủ Trò chơi trực tuyến trong LAN."
+   "Scan the local network for rollback hosts advertising over LAN."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Bắt đầu máy chủ Trò chơi trực tuyến"
+   "Host GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Bắt đầu Trò chơi trực tuyến ở chế độ máy chủ (dịch vụ)."
+   "Launch a rollback server using the settings below."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,
