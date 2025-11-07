@@ -9104,7 +9104,7 @@ unsigned menu_displaylist_build_list(
 
             menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,            PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_DESYNC_HANDLING,            PARSE_ONLY_STRING, false},
+               {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,                PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_NETPLAY_IP_ADDRESS,                 PARSE_ONLY_STRING, true},
                {MENU_ENUM_LABEL_NETPLAY_TCP_UDP_PORT,               PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,            PARSE_ONLY_UINT,   true},
@@ -9116,7 +9116,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_NAME,            PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_CHAT_COLOR_MSG,             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,              PARSE_ONLY_BOOL,   true},
-               {MENU_ENUM_LABEL_NETPLAY_SPECTATOR_LIMIT,            PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES,               PARSE_ONLY_INT,    true},
                {MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,   PARSE_ONLY_INT,    true},
                {MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE, PARSE_ONLY_INT,    true},
@@ -12237,11 +12237,11 @@ bool menu_displaylist_ctl(enum menu_displaylist_ctl_state type,
                   {MENU_ENUM_LABEL_NETPLAY_MAX_CONNECTIONS,    PARSE_ONLY_UINT,   true},
                   {MENU_ENUM_LABEL_NETPLAY_MAX_PING,           PARSE_ONLY_UINT,   true},
                   {MENU_ENUM_LABEL_NETPLAY_PUBLIC_ANNOUNCE,    PARSE_ONLY_BOOL,   true},
-                  {MENU_ENUM_LABEL_NETPLAY_DESYNC_HANDLING,    PARSE_ONLY_STRING, true},
+                  {MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,        PARSE_ONLY_STRING, true},
                   {MENU_ENUM_LABEL_NETPLAY_PASSWORD,           PARSE_ONLY_STRING, true},
                   {MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,  PARSE_ONLY_STRING, true},
                   {MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING,      PARSE_ONLY_BOOL,   true},
-                  {MENU_ENUM_LABEL_NETPLAY_SPECTATOR_LIMIT,    PARSE_ONLY_UINT,   true},
+                  {MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,     PARSE_ONLY_UINT,   true},
                   {MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL,      PARSE_ONLY_BOOL,   true},
                };
 

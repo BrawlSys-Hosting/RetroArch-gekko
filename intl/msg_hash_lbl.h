@@ -2564,7 +2564,7 @@ MSG_HASH(
    "netplay_public_announce"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_SPECTATOR_LIMIT,
+   MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,
    "netplay_spectator_limit"
    )
 MSG_HASH(
@@ -5102,7 +5102,7 @@ MSG_HASH(
    "shader_pipeline_bokeh"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_DESYNC_HANDLING,
+   MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
    "netplay_desync_handling"
    )
 MSG_HASH(
