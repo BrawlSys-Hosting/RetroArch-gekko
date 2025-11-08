@@ -935,8 +935,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_fade_chat,             MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_chat_color_name,       MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_NAME)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_chat_color_msg,        MENU_ENUM_SUBLABEL_NETPLAY_CHAT_COLOR_MSG)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_allow_pausing,         MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_PAUSING)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_allow_slaves,          MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_require_slaves,        MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_check_frames,          MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_nat_traversal,         MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_stdin_cmd_enable,              MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE)
@@ -984,7 +982,56 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_menu_show_sublabels,                
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_navigation_wraparound,                 MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_audio_resampler_quality,               MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_host,                   MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_enable_client,                 MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT)
+static int action_bind_sublabel_netplay_enable_client(file_list_t *list,
+      unsigned type, unsigned i,
+      const char *label, const char *path,
+      char *s, size_t len)
+{
+   const char *base         = msg_hash_to_str(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT);
+   const char *status_label = msg_hash_to_str(MENU_ENUM_LABEL_STATUS);
+   const char *status_value = NULL;
+   size_t written           = 0;
+   netplay_session_status_info_t status_info;
+   bool have_status = netplay_driver_ctl(
+         RARCH_NETPLAY_CTL_GET_SESSION_STATUS, &status_info);
+
+   (void)list;
+   (void)type;
+   (void)i;
+   (void)label;
+   (void)path;
+
+   if (base)
+      written = strlcpy(s, base, len);
+   else if (len > 0)
+      s[0] = '\0';
+
+   if (have_status && !string_is_empty(status_info.message))
+      status_value = status_info.message;
+   else
+      status_value = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
+
+   if (!string_is_empty(status_value) && len > written)
+   {
+      if (string_is_empty(status_label))
+         status_label = "Status";
+
+      written += snprintf(s + written, len - written, "\n%s: %s",
+            status_label, status_value);
+   }
+
+   if (have_status && status_info.session_sync_total > 0 && len > written)
+   {
+      const char *sync_label = "Sync";
+
+      written += snprintf(s + written, len - written, "\n%s: %u/%u",
+            sync_label,
+            status_info.session_sync_current,
+            status_info.session_sync_total);
+   }
+
+   return 0;
+}
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_disconnect,                    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_kick,                          MENU_ENUM_SUBLABEL_NETPLAY_KICK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_ban,                           MENU_ENUM_SUBLABEL_NETPLAY_BAN)
@@ -1304,9 +1351,6 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_y,                 MEN
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_portrait_x,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_video_vp_bias_portrait_y,        MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_Y)
 #endif
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_use_mitm_server,               MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_mitm_server,                   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER)
-DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_netplay_custom_mitm_server,            MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_lock,                             MENU_ENUM_SUBLABEL_CORE_LOCK)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_set_standalone_exempt,            MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_core_delete,                           MENU_ENUM_SUBLABEL_CORE_DELETE)
@@ -3855,12 +3899,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
          case MENU_ENUM_LABEL_NETPLAY_ALLOW_PAUSING:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_allow_pausing);
             break;
-         case MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_allow_slaves);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_require_slaves);
-            break;
          case MENU_ENUM_LABEL_NETPLAY_PASSWORD:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_password);
             break;
@@ -5526,15 +5564,6 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_CONTENT_FAVORITES_SIZE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_content_favorites_size);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_use_mitm_server);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_MITM_SERVER:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_mitm_server);
-            break;
-         case MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER:
-            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_netplay_custom_mitm_server);
             break;
          case MENU_ENUM_LABEL_CORE_LOCK:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_core_lock);

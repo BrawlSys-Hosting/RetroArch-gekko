@@ -852,8 +852,10 @@ static void win32_get_video_size(void* data,
    bool quit = false;
    bool resize = false;
    win32_check_window(NULL, &quit, &resize, width, height);
-   width = uwp_get_width();
-   height = uwp_get_height();
+   if (width)
+      *width  = uwp_get_width();
+   if (height)
+      *height = uwp_get_height();
 }
 
 void win32_get_video_output_size(void* data, unsigned* width, unsigned* height, char* desc, size_t desc_len)

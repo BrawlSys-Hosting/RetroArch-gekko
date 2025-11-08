@@ -220,8 +220,9 @@ typedef struct settings
       unsigned netplay_max_ping;
       unsigned netplay_chat_color_name;
       unsigned netplay_chat_color_msg;
-      unsigned netplay_input_latency_frames_min;
-      unsigned netplay_input_latency_frames_range;
+      unsigned netplay_local_delay;
+      unsigned netplay_spectator_limit;
+      unsigned netplay_prediction_window;
       unsigned netplay_share_digital;
       unsigned netplay_share_analog;
       unsigned bundle_assets_extract_version_current;
@@ -518,7 +519,7 @@ typedef struct settings
 #endif
       char audio_device[NAME_MAX_LENGTH];
       char camera_device[NAME_MAX_LENGTH];
-      char netplay_mitm_server[NAME_MAX_LENGTH];
+      char netplay_desync_handling[64];
       char webdav_url[NAME_MAX_LENGTH];
       char webdav_username[NAME_MAX_LENGTH];
       char webdav_password[NAME_MAX_LENGTH];
@@ -547,7 +548,6 @@ typedef struct settings
       char streaming_title[512]; /* TODO/FIXME - check size */
 
       char netplay_server[NAME_MAX_LENGTH];
-      char netplay_custom_mitm_server[NAME_MAX_LENGTH];
       char network_buildbot_url[NAME_MAX_LENGTH];
       char network_buildbot_assets_url[NAME_MAX_LENGTH];
       char menu_content_show_settings_password[NAME_MAX_LENGTH];
@@ -922,10 +922,7 @@ typedef struct settings
       bool netplay_start_as_spectator;
       bool netplay_fade_chat;
       bool netplay_allow_pausing;
-      bool netplay_allow_slaves;
-      bool netplay_require_slaves;
       bool netplay_nat_traversal;
-      bool netplay_use_mitm_server;
       bool netplay_request_devices[MAX_USERS];
       bool netplay_ping_show;
 
