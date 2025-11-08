@@ -7370,28 +7370,12 @@ MSG_HASH(
    "Визначає, чи публічно анонсувати мережеві ігри. Якщо перемикач не встановлено, клієнти повинні підключатися вручну, а не використовувати відкрите лобі."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Використовувати сервер ретрансляції"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
+   "Desync Handling"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Пересилання мережевих з'єднань через людино-середній сервер. Корисно, якщо хост стоїть за брандмауером або має проблеми NAT/UPnP."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Адреса сервера ретрансляції"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Виберіть конкретний сервер для використання. Географічно ближче розташування має нижчу затримку."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Адреса сервера сервера користувацької станції"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Введіть адресу вашого користувальницького сервера естафетів. Формат: адресу або адресу|порту."
+   MENU_ENUM_SUBLABEL_NETPLAY_DESYNC_HANDLING,
+   "Choose how GekkoNet reacts when rollback cannot resync automatically (auto catch-up, notify-only, halt, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7499,55 +7483,55 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Дозволити клієнтам слов'янський режим"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Дозволити підключення в режимі раба. Для роботи в режимі \"Слабкий режим\" клієнти потребують дуже мало переробки енергії на обох сторінках, але це значно вплине на затримку мережі."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Заборонити клієнтам неслов'янський режим"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_LIMIT,
+   "Spectator Limit"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Заборонити підключення не в режимі раба. Не рекомендовано, окрім дуже швидких мереж з дуже слабкими машинами."
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATOR_LIMIT,
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Перевірка кадрів мережевою грою"
+   "Compatibility Sync Check (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "Частота (в кадрах) перевірки синхронізації хоста і клієнта."
+   "Legacy deterministic sync interval; rollback sessions can usually leave this at zero."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "Частота кадрів за допомогою якої мережевий режим перевірить, що хост і клієнт синхронізуються. З більшою кількістю ядер це значення не матиме видимого ефекту і може бути проігноровано. З невизначальними ядрами ця величина визначає, як часто гравці мережевого гри будуть с[...]"
+   "Legacy deterministic netplay checks. Rollback already reconciles desyncs automatically, so keep this at zero unless you are hosting an older lockstep core that still requires periodic verification."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Кадри затримки вводу"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Кількість кадрів затримки для мережевої гри, щоб приховати затримку в мережі. Зменшує тремтіння і зменшує вплив мережевої гри на процесор за рахунок помітного відставання вводу."
+   "Baseline rollback delay applied to local inputs before simulation. Higher values add latency but absorb sustained jitter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Кількість кадрів затримки, що використовуються в Інтернеті, щоб приховати затримку в мережі.\nУ сітці цей параметр затримує локальний ввід, так що процесор знаходиться ближче до кадру, отриманих із мережі. Це зменшує jitter і робить мережеві мережі менш інтенсивними, але за ці[...]"
+   "Number of frames that GekkoNet holds local inputs before advancing the simulation. Increase to trade responsiveness for stability when regular latency spikes occur."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Діапазон кадрів затримки вводу"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Діапазон затримки введення, які можуть використовуватися для приховування затримки в мережі. Зменшує jitter і робить мережеву мережу менш інтенсивним процесора, за рахунок непередбачуваного відставання введення."
+   "How many extra frames GekkoNet may borrow automatically when latency spikes beyond the base delay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Діапазон затримки введення, які можуть використовуватися мережею, щоб приховати затримку в мережі.\nЯкщо встановлено, то netplay налаштує кількість кадрів з динамічно введення до балансу, затримка тексту процесора, затримка введення і мережевої мережі. Це зменшує jitter і робит[...]"
+   "Maximum additional frames GekkoNet can temporarily add on top of the base delay. Larger windows smooth sudden spikes but introduce more variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -8443,19 +8427,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Підʼєднатися до хоста мережевої гри"
+   "Join GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Ввести адресу сервера мережі та підключитися у режимі клієнта."
+   "Connect to a GekkoNet host using the address below and watch the rollback status as the handshake progresses."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Від'єднатися від Netplay хоста"
+   "Leave GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Від'єднатися від підключення до активної мережі."
+   "Terminate the active GekkoNet session and return to offline play."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -8475,30 +8459,30 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Оновити список хостів мережевих ігор"
+   "Refresh GekkoNet Rooms"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Сканувати на наявність хостів мережевих ігор."
+   "Query GekkoNet matchmaking for an updated list of public sessions."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Оновити список Netplay LAN"
+   "Refresh LAN Sessions"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Пошук мережевих хостів на локальній мережі."
+   "Scan the local network for rollback hosts advertising over LAN."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Запустити хост мережевої гри"
+   "Host GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Запустити мережевий режим на хості (сервері)."
+   "Launch a rollback server using the settings below."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,

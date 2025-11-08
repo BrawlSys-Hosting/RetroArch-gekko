@@ -6346,28 +6346,12 @@ MSG_HASH(
    "Czy publicznie ogłaszać gry internetowe. W przypadku braku ustawienia klienci muszą ręcznie łączyć się, zamiast korzystać z publicznego lobby."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Użyj serwera przekaźnikowego"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
+   "Desync Handling"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Przekaż połączenia gry sieciowej przez serwer pośredniczący. Przydatne, jeśli host znajduje się za zaporą lub ma problemy z NAT/UPnP."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Lokalizacja serwera przekaźnikowego"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Wybierz określony serwer przekazujący, aby go użyć. Geograficznie bliższe lokalizacje mają zazwyczaj mniejsze opóźnienie."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Niestandardowy adres serwera przekaźnika"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Wprowadź adres własnego serwera. Format: adres lub adres|port."
+   MENU_ENUM_SUBLABEL_NETPLAY_DESYNC_HANDLING,
+   "Choose how GekkoNet reacts when rollback cannot resync automatically (auto catch-up, notify-only, halt, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -6479,43 +6463,43 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Zezwalaj na klientów w trybie slave"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Zezwalaj na połączenia w trybie slave. Klienci w trybie slave potrzebują bardzo małej mocy przetwarzania po obu stronach, ale będą odczuwać znaczne opóźnienia w sieci."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Odmów klientów w trybie innym niż slave"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_LIMIT,
+   "Spectator Limit"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Nie zezwalaj na połączenia w trybie slave. Niezalecane, z wyjątkiem bardzo szybkich sieci z bardzo słabymi maszynami."
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATOR_LIMIT,
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Sprawdź klatki gry online"
+   "Compatibility Sync Check (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "Częstotliwość (w klatkach), z jaką gra sieciowa sprawdza, czy host i klient są zsynchronizowane."
+   "Legacy deterministic sync interval; rollback sessions can usually leave this at zero."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Klatki opóźnienia wejściowego"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Liczba klatek opóźnienia wejściowego używana w grze sieciowej aby ukryć opóźnienia sieci. Redukuje rwanie i sprawia, że gra sieciowa jest mniej obciążająca procesor, kosztem zauważalnego opóźnienia wejścia."
+   "Baseline rollback delay applied to local inputs before simulation. Higher values add latency but absorb sustained jitter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Zakres klatek opóźnienia wejściowego"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Zakres klatek opóźnienia wejściowego używana w grze sieciowej aby ukryć opóźnienia sieci. Redukuje rwanie i sprawia, że gra sieciowa jest mniej obciążająca procesor, kosztem zauważalnego opóźnienia wejścia."
+   "How many extra frames GekkoNet may borrow automatically when latency spikes beyond the base delay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -7323,19 +7307,19 @@ MSG_HASH(
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Połącz się z hostem gry sieciowej"
+   "Join GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Włącza grę sieciową w trybie klienta."
+   "Connect to a GekkoNet host using the address below and watch the rollback status as the handshake progresses."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Odłącz od hosta gry sieciowej"
+   "Leave GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Odłącz aktywne połączenie sieciowe."
+   "Terminate the active GekkoNet session and return to offline play."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -7355,22 +7339,22 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Odśwież listę hostów gry sieciowej"
+   "Refresh GekkoNet Rooms"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Skanuj w poszukiwaniu hostów gry sieciowej."
+   "Query GekkoNet matchmaking for an updated list of public sessions."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Uruchom hosta gry sieciowej"
+   "Host GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Uruchom sieć w trybie hosta (serwera)."
+   "Launch a rollback server using the settings below."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,

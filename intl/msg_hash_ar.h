@@ -4122,20 +4122,12 @@ MSG_HASH(
    "سواء الإعلان علنا عن ألعاب الشبكة. في حالة عدم التعيين، يجب على العملاء الاتصال يدوياً بدلاً من استخدام الردهة العامة."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "استخدام خادم النقل"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
+   "Desync Handling"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "إلى الأمام اتصالات الشبكة من خلال خادم رجل في الوسط. مفيد إذا كان المضيف وراء جدار حماية أو لديه مشاكل في NAT/UPnP."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "نقل موقع الخادم"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "اختر خادم ترحيل محدد للاستخدام. المواقع الأقرب جغرافياً تميل إلى أن يكون وقت الانتظار أقل."
+   MENU_ENUM_SUBLABEL_NETPLAY_DESYNC_HANDLING,
+   "Choose how GekkoNet reacts when rollback cannot resync automatically (auto catch-up, notify-only, halt, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_CUSTOM,
@@ -4171,31 +4163,31 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "السماح للعملاء في وضع الرق"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "عدم السماح للعملاء في وضع غير الرق"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_LIMIT,
+   "Spectator Limit"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "إطارات التحقق من الشبكة"
+   "Compatibility Sync Check (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "إطارات لاتفيا الإدخال"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "عدد أطر وقت تأخير الإدخال للشبكة لاستخدامها لإخفاء زمن الشبكة. يقلل من سرعة الاتصال ويجعل شبكة المعالجة المركزية أقل كثافة، على حساب تأخر الإدخال الملحوظ."
+   "Baseline rollback delay applied to local inputs before simulation. Higher values add latency but absorb sustained jitter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "نطاق أطر لاتفي الإدخال"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "نطاق أطر تأخير المدخلات التي يمكن استخدامها لإخفاء زمن الشبكة. يقلل من سرعة الاتصال ويجعل شبكة المعالجة المركزية أقل كثافة، على حساب التأخر في الإدخال الذي لا يمكن التنبؤ به."
+   "How many extra frames GekkoNet may borrow automatically when latency spikes beyond the base delay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -4607,30 +4599,30 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "الاتصال بمضيف Netplay"
+   "Join GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "أدخل عنوان خادم الشبكة واتصل في وضع العميل."
+   "Connect to a GekkoNet host using the address below and watch the rollback status as the handshake progresses."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "قطع الاتصال من مضيف الشبكة"
+   "Leave GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "تحديث قائمة مضيف الشبكة"
+   "Refresh GekkoNet Rooms"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "البحث عن مضيفي الشبكة."
+   "Query GekkoNet matchmaking for an updated list of public sessions."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "بدء مضيف الشبكة"
+   "Host GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,

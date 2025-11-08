@@ -1028,10 +1028,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_DESCRIPTION_KBD,
    "deferred_dropdown_box_list_input_description_kbd"
    )
-MSG_HASH(
-   MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER,
-   "deferred_dropdown_box_list_netplay_mitm_server"
-   )
+/* deferred netplay MITM dropdown removed */
 MSG_HASH(
    MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE,
    "deferred_dropdown_box_list_audio_device"
@@ -2504,11 +2501,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "netplay_input_latency_frames_min"
+   "netplay_local_delay"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "netplay_input_latency_frames_range"
+   "netplay_prediction_window"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_DISCONNECT,
@@ -2567,8 +2564,8 @@ MSG_HASH(
    "netplay_public_announce"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,
-   "netplay_require_slaves"
+   MENU_ENUM_LABEL_NETPLAY_SPECTATOR_LIMIT,
+   "netplay_spectator_limit"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD,
@@ -5105,16 +5102,8 @@ MSG_HASH(
    "shader_pipeline_bokeh"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,
-   "netplay_use_mitm_server"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
-   "netplay_mitm_server"
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "netplay_custom_mitm_server"
+   MENU_ENUM_LABEL_NETPLAY_DESYNC_HANDLING,
+   "netplay_desync_handling"
    )
 MSG_HASH(
    MENU_ENUM_LABEL_ADD_TO_MIXER,

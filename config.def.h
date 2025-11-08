@@ -1343,11 +1343,11 @@
 /* Allow players to pause */
 #define DEFAULT_NETPLAY_ALLOW_PAUSING false
 
-/* Allow connections in slave mode */
-#define DEFAULT_NETPLAY_ALLOW_SLAVES true
-
-/* Require connections only in slave mode */
-#define DEFAULT_NETPLAY_REQUIRE_SLAVES false
+/* Default GekkoNet rollback parameters */
+#define DEFAULT_NETPLAY_LOCAL_DELAY 2
+#define DEFAULT_NETPLAY_SPECTATOR_LIMIT 8
+#define DEFAULT_NETPLAY_PREDICTION_WINDOW 8
+#define DEFAULT_NETPLAY_DESYNC_HANDLING "auto"
 
 /* When being client over netplay, use keybinds for
  * user 1 rather than user 2. */
@@ -1359,9 +1359,6 @@
 
 #define DEFAULT_NETPLAY_CHECK_FRAMES 600
 
-#define DEFAULT_NETPLAY_USE_MITM_SERVER false
-
-#define DEFAULT_NETPLAY_MITM_SERVER "nyc"
 
 #ifdef HAVE_NETWORKING
 #define DEFAULT_NETPLAY_MAX_CONNECTIONS 3

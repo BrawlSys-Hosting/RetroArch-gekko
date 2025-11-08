@@ -1600,7 +1600,7 @@ static struct config_array_setting *populate_settings_array(
 #endif
 
 #ifdef HAVE_NETWORKING
-   SETTING_ARRAY("netplay_mitm_server",          settings->arrays.netplay_mitm_server, false, NULL, true);
+   SETTING_ARRAY("netplay_desync_handling",      settings->arrays.netplay_desync_handling, true, DEFAULT_NETPLAY_DESYNC_HANDLING, true);
    SETTING_ARRAY("webdav_url",                   settings->arrays.webdav_url, false, NULL, true);
    SETTING_ARRAY("webdav_username",              settings->arrays.webdav_username, false, NULL, true);
    SETTING_ARRAY("webdav_password",              settings->arrays.webdav_password, false, NULL, true);
@@ -1705,7 +1705,6 @@ static struct config_path_setting *populate_settings_path(
 
 #ifdef HAVE_NETWORKING
    SETTING_PATH("netplay_ip_address",            settings->paths.netplay_server, false, NULL, true);
-   SETTING_PATH("netplay_custom_mitm_server",    settings->paths.netplay_custom_mitm_server, false, NULL, true);
    SETTING_PATH("netplay_nickname",              settings->paths.username, false, NULL, true);
    SETTING_PATH("netplay_password",              settings->paths.netplay_password, false, NULL, true);
    SETTING_PATH("netplay_spectate_password",     settings->paths.netplay_spectate_password, false, NULL, true);
@@ -2227,9 +2226,6 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_nat_traversal",         &settings->bools.netplay_nat_traversal, true, true, false);
    SETTING_BOOL("netplay_fade_chat",             &settings->bools.netplay_fade_chat, true, DEFAULT_NETPLAY_FADE_CHAT, false);
    SETTING_BOOL("netplay_allow_pausing",         &settings->bools.netplay_allow_pausing, true, DEFAULT_NETPLAY_ALLOW_PAUSING, false);
-   SETTING_BOOL("netplay_allow_slaves",          &settings->bools.netplay_allow_slaves, true, DEFAULT_NETPLAY_ALLOW_SLAVES, false);
-   SETTING_BOOL("netplay_require_slaves",        &settings->bools.netplay_require_slaves, true, DEFAULT_NETPLAY_REQUIRE_SLAVES, false);
-   SETTING_BOOL("netplay_use_mitm_server",       &settings->bools.netplay_use_mitm_server, true, DEFAULT_NETPLAY_USE_MITM_SERVER, false);
    SETTING_BOOL("netplay_request_device_p1",     &settings->bools.netplay_request_devices[0], true, false, false);
    SETTING_BOOL("netplay_request_device_p2",     &settings->bools.netplay_request_devices[1], true, false, false);
    SETTING_BOOL("netplay_request_device_p3",     &settings->bools.netplay_request_devices[2], true, false, false);
@@ -2601,8 +2597,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("netplay_max_ping",                   &settings->uints.netplay_max_ping, true, DEFAULT_NETPLAY_MAX_PING, false);
    SETTING_UINT("netplay_chat_color_name",            &settings->uints.netplay_chat_color_name, true, DEFAULT_NETPLAY_CHAT_COLOR_NAME, false);
    SETTING_UINT("netplay_chat_color_msg",             &settings->uints.netplay_chat_color_msg, true, DEFAULT_NETPLAY_CHAT_COLOR_MSG, false);
-   SETTING_UINT("netplay_input_latency_frames_min",   &settings->uints.netplay_input_latency_frames_min, true, 0, false);
-   SETTING_UINT("netplay_input_latency_frames_range", &settings->uints.netplay_input_latency_frames_range, true, 0, false);
+   SETTING_UINT("netplay_local_delay",                &settings->uints.netplay_local_delay, true, DEFAULT_NETPLAY_LOCAL_DELAY, false);
+   SETTING_UINT("netplay_spectator_limit",            &settings->uints.netplay_spectator_limit, true, DEFAULT_NETPLAY_SPECTATOR_LIMIT, false);
+   SETTING_UINT("netplay_prediction_window",          &settings->uints.netplay_prediction_window, true, DEFAULT_NETPLAY_PREDICTION_WINDOW, false);
    SETTING_UINT("netplay_share_digital",              &settings->uints.netplay_share_digital, true, DEFAULT_NETPLAY_SHARE_DIGITAL, false);
    SETTING_UINT("netplay_share_analog",               &settings->uints.netplay_share_analog,  true, DEFAULT_NETPLAY_SHARE_ANALOG, false);
 #endif
@@ -2829,7 +2826,7 @@ void config_set_defaults(void *data)
    const char *def_location         = config_get_default_location();
    const char *def_record           = config_get_default_record();
    const char *def_midi             = config_get_default_midi();
-   const char *def_mitm             = DEFAULT_NETPLAY_MITM_SERVER;
+   const char *def_desync           = DEFAULT_NETPLAY_DESYNC_HANDLING;
    struct video_viewport *custom_vp = &settings->video_vp_custom;
    struct config_float_setting      *float_settings = populate_settings_float (settings, &float_settings_size);
    struct config_bool_setting       *bool_settings  = populate_settings_bool  (settings, &bool_settings_size);
@@ -2954,10 +2951,10 @@ void config_set_defaults(void *data)
       configuration_set_string(settings,
             settings->arrays.midi_driver,
             def_midi);
-   if (def_mitm)
+   if (def_desync)
       configuration_set_string(settings,
-            settings->arrays.netplay_mitm_server,
-            def_mitm);
+            settings->arrays.netplay_desync_handling,
+            def_desync);
 #ifdef HAVE_MENU
    if (def_menu)
       configuration_set_string(settings,
