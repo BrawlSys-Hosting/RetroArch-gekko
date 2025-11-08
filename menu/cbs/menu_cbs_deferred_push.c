@@ -214,7 +214,6 @@ GENERIC_DEFERRED_PUSH(deferred_push_subsystem_settings_list,        DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_network_hosting_settings_list,  DISPLAYLIST_NETWORK_HOSTING_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_netplay_kick_list,              DISPLAYLIST_NETPLAY_KICK_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_netplay_ban_list,               DISPLAYLIST_NETPLAY_BAN_LIST)
-GENERIC_DEFERRED_PUSH(deferred_push_netplay_lobby_filters_list,     DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_lakka_services_list,            DISPLAYLIST_LAKKA_SERVICES_LIST)
 #ifdef HAVE_LAKKA_SWITCH
 GENERIC_DEFERRED_PUSH(deferred_push_lakka_switch_options_list,      DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST)
@@ -653,7 +652,6 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_select_reser
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_input_select_physical_keyboard, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD)
 #endif
 #ifdef HAVE_NETWORKING
-GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_netplay_mitm_server, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_NETPLAY_MITM_SERVER)
 #endif
 GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_list,          DISPLAYLIST_ADD_TO_PLAYLIST_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_add_to_playlist_quickmenu,     DISPLAYLIST_ADD_TO_PLAYLIST_QUICKMENU)
@@ -703,7 +701,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_INPUT_SELECT_PHYSICAL_KEYBOARD, deferred_push_dropdown_box_list_input_select_physical_keyboard},
 #endif
 #ifdef HAVE_NETWORKING
-      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER, deferred_push_dropdown_box_list_netplay_mitm_server},
 #endif
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_LIST, deferred_push_browse_url_list},
       {MENU_ENUM_LABEL_DEFERRED_BROWSE_URL_START, deferred_push_browse_url_start},
@@ -748,7 +745,6 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_NETWORK_HOSTING_SETTINGS_LIST, deferred_push_network_hosting_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_NETPLAY_KICK_LIST, deferred_push_netplay_kick_list},
       {MENU_ENUM_LABEL_DEFERRED_NETPLAY_BAN_LIST, deferred_push_netplay_ban_list},
-      {MENU_ENUM_LABEL_DEFERRED_NETPLAY_LOBBY_FILTERS_LIST, deferred_push_netplay_lobby_filters_list},
       {MENU_ENUM_LABEL_DEFERRED_BLUETOOTH_SETTINGS_LIST, deferred_push_bluetooth_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST, deferred_push_wifi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST, deferred_push_wifi_networks_list},
