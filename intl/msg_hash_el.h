@@ -3326,7 +3326,11 @@ MSG_HASH(
    "Δημόσια Ανακοίνωση Netplay"
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
+   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
+   "Relay Server (Deprecated)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
    "Desync Handling"
    )
 MSG_HASH(

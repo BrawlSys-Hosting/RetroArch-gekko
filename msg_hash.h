@@ -3872,17 +3872,22 @@ enum msg_hash_enums
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_FOUND,
    MENU_ENUM_LABEL_VALUE_NETPLAY_COMPAT_CONTENT_NOT_FOUND,
 
+<<<<<<< HEAD
    MENU_LABEL(NETPLAY_DESYNC_HANDLING),
    /* Deprecated compatibility entries kept so regenerated locale headers
-    * that still reference the legacy MITM/slave toggles continue to compile.
-    * Ensure this block stays free of merge conflict markers since the locale
-    * headers are generated automatically and expect the exact enumerator
-    * names preserved here. */
-   MENU_LABEL(NETPLAY_USE_MITM_SERVER),
-   MENU_LABEL(NETPLAY_MITM_SERVER),
+    * that still reference the legacy MITM/slave toggles continue to compile. */
+   MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,
+   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
+   MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
+   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
    MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,
    MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
    MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
+=======
+   MENU_LABEL(NETPLAY_MITM_SERVER),
+>>>>>>> master
    MENU_ENUM_LABEL_NETPLAY_MITM_SERVER_LOCATION,
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_2,

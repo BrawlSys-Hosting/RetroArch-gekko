@@ -467,7 +467,7 @@ QWidget *NetplayPage::widget()
    serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_PASSWORD));
    serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_SPECTATE_PASSWORD));
    serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_NAT_TRAVERSAL));
-   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_DESYNC_HANDLING));
+   serverForm->add(menu_setting_find_enum(MENU_ENUM_LABEL_NETPLAY_MITM_SERVER));
 
    serverLayout->addLayout(serverForm);
 
@@ -476,7 +476,7 @@ QWidget *NetplayPage::widget()
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_CHECK_FRAMES);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN);
    syncGroup->add(MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE);
-   syncGroup->add(MENU_ENUM_LABEL_NETPLAY_SPECTATOR_LIMIT);
+   syncGroup->add(MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES);
 
    inputGroup->add(MENU_ENUM_LABEL_NETPLAY_SHARE_DIGITAL);
    inputGroup->add(MENU_ENUM_LABEL_NETPLAY_SHARE_ANALOG);
