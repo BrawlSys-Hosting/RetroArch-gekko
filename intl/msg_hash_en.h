@@ -1078,12 +1078,8 @@ MSG_HASH(
    "Whether to announce net-play games publicly. If unset, clients must manually connect rather than using the public lobby."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
-   "Desync Handling"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_DESYNC_HANDLING,
-   "Choose how GekkoNet reacts when rollback cannot resync automatically (auto catch-up, notify-only, halt, etc.)."
+   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   "Legacy relay toggle preserved for backward compatibility."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_3,
@@ -1150,32 +1146,24 @@ MSG_HASH(
    "Legacy deterministic sync interval; rollback sessions can usually leave this at zero."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Local Input Delay (Frames)"
-   )
-MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
    "Legacy deterministic netplay checks. Rollback already reconciles desyncs automatically, so keep this at zero unless you are hosting an older lockstep core that still requires periodic verification."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Baseline rollback delay applied to local inputs before simulation. Higher values add latency but absorb sustained jitter."
+   "Frames of deliberate local delay to mask latency; higher values add input lag but keep gameplay stable."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Number of frames that GekkoNet holds local inputs before advancing the simulation. Increase to trade responsiveness for stability when regular latency spikes occur."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Prediction Window (Frames)"
+   "Number of frames that GekkoNet delays local inputs before simulation. Raising this hides jitter and reduces CPU spikes, but increases input lag."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "How many extra frames GekkoNet may borrow automatically when latency spikes beyond the base delay."
+   "How far the local delay may expand automatically to absorb latency spikes."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Maximum additional frames GekkoNet can temporarily add on top of the base delay. Larger windows smooth sudden spikes but introduce more variable input lag."
+   "Maximum extra frames GekkoNet may borrow for prediction when network jitter occurs. Higher values smooth stutter at the cost of variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
