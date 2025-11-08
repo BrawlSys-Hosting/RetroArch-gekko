@@ -1122,6 +1122,22 @@ MSG_HASH(
    "Allow players to pause during net-play."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
+   "Legacy Slave-Mode (Deprecated)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_LIMIT,
+   "Spectator Limit"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATOR_LIMIT,
+   "Maximum number of spectators allowed in a GekkoNet session."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
    "Compatibility Sync Check (Frames)"
    )
