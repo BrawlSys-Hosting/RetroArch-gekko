@@ -7498,28 +7498,12 @@ MSG_HASH(
    "Cibé acu cluichí netplay a fhógairt go poiblí nó nach ea. Mura bhfuil sé socraithe, ní mór do chliaint ceangal de láimh seachas an stocaireacht phoiblí a úsáid."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Úsáid Freastalaí Athsheolta"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
+   "Desync Handling"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Seol naisc netplay ar aghaidh trí fhreastalaí fear-sa-lár. Úsáideach má tá an t-óstach taobh thiar de bhalla dóiteáin nó má tá fadhbanna NAT/UPnP aige."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Suíomh an Fhreastalaí Athsheolta"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Roghnaigh freastalaí athsheachadta ar leith le húsáid. Is gnách go mbíonn moill níos ísle ag suíomhanna atá níos gaire go geografach."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Seoladh Freastalaí Athsheolta Saincheaptha"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Cuir isteach seoladh do fhreastalaí athsheachadta saincheaptha anseo. Formáid: seoladh nó seoladh|port."
+   MENU_ENUM_SUBLABEL_NETPLAY_DESYNC_HANDLING,
+   "Choose how GekkoNet reacts when rollback cannot resync automatically (auto catch-up, notify-only, halt, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7635,55 +7619,55 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Ceadaigh Cliant Mód Sclábhaí"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Ceadaigh naisc i mód sclábhaí. Ní bhíonn mórán cumhachta próiseála ag teastáil ó chliaint i mód sclábhaí ar cheachtar taobh, ach beidh moill mhór líonra orthu."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Cosc a chur ar chliaint nach bhfuil i mód sclábhaí"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_LIMIT,
+   "Spectator Limit"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Cosc a chur ar naisc nach bhfuil i mód sclábhaí. Ní mholtar é seo ach amháin i gcás líonraí an-tapa le meaisíní an-laga."
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATOR_LIMIT,
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Frámaí Seiceála Netplay"
+   "Compatibility Sync Check (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "An mhinicíocht (i bhfrámaí) a fhíoróidh netplay go bhfuil an t-óstach agus an cliant sioncrónaithe."
+   "Legacy deterministic sync interval; rollback sessions can usually leave this at zero."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "An mhinicíocht i bhfrámaí lena n-úsáideann netplay fíorú go bhfuil an t-óstach agus an cliant sioncrónaithe. Le formhór na gcroíleacán, ní bheidh aon éifeacht le feiceáil ag an luach seo agus is féidir neamhaird a dhéanamh air. Le croíleacáin neamhchinntitheacha, cinneann an luach seo cé chomh minic a thabharfar na piaraí netplay i sioncrónú. Le croíleacáin lochtacha, má shocraítear é seo go luach neamh-nialas, beidh fadhbanna feidhmíochta tromchúiseacha mar thoradh[...]"
+   "Legacy deterministic netplay checks. Rollback already reconciles desyncs automatically, so keep this at zero unless you are hosting an older lockstep core that still requires periodic verification."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Frámaí Latency Ionchuir"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Líon na bhfrámaí de mhoill ionchuir le húsáid ag netplay chun moill líonra a cheilt. Laghdaíonn sé seo crith agus déanann netplay níos lú dian ar LAP, ar chostas moill ionchuir suntasach."
+   "Baseline rollback delay applied to local inputs before simulation. Higher values add latency but absorb sustained jitter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Líon na bhfrámaí de mhoill ionchuir le húsáid ag netplay chun moill líonra a cheilt.\nNuair atá netplay i bhfeidhm, cuireann an rogha seo moill ar ionchur áitiúil, ionas go mbeidh an fráma atá á rith níos gaire do na frámaí atá á bhfáil ón líonra. Laghdaíonn sé seo an crith agus déanann netplay níos lú dian ar LAP, ach ar chostas moille ionchuir suntasach."
+   "Number of frames that GekkoNet holds local inputs before advancing the simulation. Increase to trade responsiveness for stability when regular latency spikes occur."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Raon Frámaí Latency Ionchuir"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "An raon frámaí moille ionchuir a fhéadfar a úsáid chun moille líonra a cheilt. Laghdaíonn sé seo crith agus déanann sé súgradh líonra níos lú dian ar LAP, ar chostas moille ionchuir dothuartha."
+   "How many extra frames GekkoNet may borrow automatically when latency spikes beyond the base delay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "An raon frámaí moille ionchuir a fhéadfaidh netplay a úsáid chun moill líonra a cheilt.\nMá shocraítear é, déanfaidh netplay líon na bhfrámaí moille ionchuir a choigeartú go dinimiciúil chun am LAP, moill ionchuir agus moill líonra a chothromú. Laghdaíonn sé seo jitter agus déanann netplay níos lú dian ar LAP, ach ar chostas moille ionchuir dothuartha."
+   "Maximum additional frames GekkoNet can temporarily add on top of the base delay. Larger windows smooth sudden spikes but introduce more variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_NAT_TRAVERSAL,
@@ -8575,19 +8559,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Ceangail le hÓstach Netplay"
+   "Join GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Cuir isteach seoladh freastalaí netplay agus ceangail i mód cliaint."
+   "Connect to a GekkoNet host using the address below and watch the rollback status as the handshake progresses."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Dícheangail ó Óstach Netplay"
+   "Leave GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Dícheangail nasc líonra gníomhach."
+   "Terminate the active GekkoNet session and return to offline play."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -8607,30 +8591,30 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Athnuaigh Liosta Óstach Netplay"
+   "Refresh GekkoNet Rooms"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Scanáil le haghaidh óstaigh netplay."
+   "Query GekkoNet matchmaking for an updated list of public sessions."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Athnuaigh Liosta LAN Netplay"
+   "Refresh LAN Sessions"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Scanáil le haghaidh óstaigh netplay ar LAN."
+   "Scan the local network for rollback hosts advertising over LAN."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Tosaigh Óstach Netplay"
+   "Host GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Tosaigh netplay i mód óstach (freastalaí)."
+   "Launch a rollback server using the settings below."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,

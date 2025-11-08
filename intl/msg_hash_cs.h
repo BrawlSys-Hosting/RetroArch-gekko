@@ -7166,28 +7166,12 @@ MSG_HASH(
    "Zda se mají hry pro hraní po síti oznamovat veřejně. Pokud není nastaveno, musí se klienti připojit ručně, nikoli pomocí veřejné lobby."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-   "Použít relay server"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
+   "Desync Handling"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
-   "Přeposílání síťových připojení přes server man-in-the-middle. Užitečné, pokud je hostitel za firewallem nebo má problémy s NAT/UPnP."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-   "Umístění přenosového serveru"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_MITM_SERVER,
-   "Vyberte konkrétní přenosový server, který chcete použít. Geograficky bližší místa mají obvykle nižší latenci."
-   )
-MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-   "Vlastní adresa přenosového serveru"
-   )
-MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_CUSTOM_MITM_SERVER,
-   "Zde zadejte adresu vlastního relay serveru. Formát: adresa nebo adresa|port."
+   MENU_ENUM_SUBLABEL_NETPLAY_DESYNC_HANDLING,
+   "Choose how GekkoNet reacts when rollback cannot resync automatically (auto catch-up, notify-only, halt, etc.)."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER_LOCATION_1,
@@ -7299,55 +7283,55 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-   "Povolení klientů v podřízeném režimu"
+   "Legacy Slave-Mode (Deprecated)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ALLOW_SLAVES,
-   "Povolit připojení v režimu slave. Klienti v podřízeném režimu vyžadují velmi malý výpočetní výkon na obou stranách, ale výrazně trpí zpožděním sítě."
+   "Legacy netplay mode retained for compatibility; has no effect with GekkoNet."
    )
 MSG_HASH(
-   MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-   "Zakázat klienty v jiném než v podřízeném režimu"
+   MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_LIMIT,
+   "Spectator Limit"
    )
 MSG_HASH(
-   MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
-   "Zakázat připojení, která nejsou v podřízeném režimu. Nedoporučuje se s výjimkou velmi rychlých sítí s velmi slabými stroji."
+   MENU_ENUM_SUBLABEL_NETPLAY_SPECTATOR_LIMIT,
+   "Maximum number of spectators allowed in a GekkoNet session."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_CHECK_FRAMES,
-   "Kontrolní snímky Netplay"
+   "Compatibility Sync Check (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_CHECK_FRAMES,
-   "Frekvence (ve snímcích), s jakou bude hra netplay ověřovat, zda jsou hostitel a klient synchronizováni."
+   "Legacy deterministic sync interval; rollback sessions can usually leave this at zero."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_CHECK_FRAMES,
-   "Frekvence v rámcích, s níž bude síťová hra ověřovat, zda jsou hostitel a klient synchronizováni. U většiny jader nebude mít tato hodnota žádný viditelný vliv a lze ji ignorovat. U neurčitých jader tato hodnota určuje, jak často se budou vzájemně synchronizovat jádra netplay. U chybných jader způsobí nastavení této hodnoty na jakoukoli nenulovou hodnotu vážné problémy s výkonem. Nastavením na nulu neprovádíte žádné kontroly. Tato hodnota se používá pouze[...]"
+   "Legacy deterministic netplay checks. Rollback already reconciles desyncs automatically, so keep this at zero unless you are hosting an older lockstep core that still requires periodic verification."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Zpoždění vstupních snímků"
+   "Local Input Delay (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Počet snímků vstupního zpoždění, které má hra netplay použít ke skrytí zpoždění sítě. Snižuje chvění a snižuje náročnost přehrávání v síti na procesor na úkor znatelného vstupního zpoždění."
+   "Baseline rollback delay applied to local inputs before simulation. Higher values add latency but absorb sustained jitter."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-   "Počet snímků vstupního zpoždění, které má hra netplay použít ke skrytí zpoždění sítě.\nPři hře netplay tato volba zpožďuje místní vstup, takže spuštěný snímek je blíže ke snímkům přijatým ze sítě. Tím se sníží jitter a netplay méně zatěžuje procesor, ale za cenu znatelného zpoždění vstupu."
+   "Number of frames that GekkoNet holds local inputs before advancing the simulation. Increase to trade responsiveness for stability when regular latency spikes occur."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Vstupní zpoždění rozsah snímků"
+   "Prediction Window (Frames)"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Rozsah snímků vstupního zpoždění, které lze použít ke skrytí zpoždění sítě. Snižuje jitter a snižuje náročnost síťové hry na procesor na úkor nepředvídatelného vstupního zpoždění."
+   "How many extra frames GekkoNet may borrow automatically when latency spikes beyond the base delay."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_HELP_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-   "Rozsah snímků vstupního zpoždění, které může hra netplay použít ke skrytí zpoždění sítě.\nJe-li nastaveno, hra netplay dynamicky upraví počet snímků vstupního zpoždění tak, aby vyvážila čas procesoru, vstupní zpoždění a zpoždění sítě. Tím se sníží chvění a netplay méně zatěžuje procesor, ale za cenu nepředvídatelného vstupního zpoždění."
+   "Maximum additional frames GekkoNet can temporarily add on top of the base delay. Larger windows smooth sudden spikes but introduce more variable input lag."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_NAT_TRAVERSAL,
@@ -8231,19 +8215,19 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_CLIENT,
-   "Připojení k hostiteli netplay"
+   "Join GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,
-   "Zadejte adresu serveru netplay a připojte se v režimu klienta."
+   "Connect to a GekkoNet host using the address below and watch the rollback status as the handshake progresses."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISCONNECT,
-   "Odpojení od hostitele netplay"
+   "Leave GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_DISCONNECT,
-   "Odpojení aktivního připojení k síti."
+   "Terminate the active GekkoNet session and return to offline play."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_LOBBY_FILTERS,
@@ -8263,30 +8247,30 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
-   "Obnovení seznamu hostitelů služby netplay"
+   "Refresh GekkoNet Rooms"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
-   "Vyhledávání hostitelů pro přehrávání v síti."
+   "Query GekkoNet matchmaking for an updated list of public sessions."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
-   "Obnovení netplay LAN seznamu"
+   "Refresh LAN Sessions"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
-   "Vyhledávání hostitelů netplay v síti LAN."
+   "Scan the local network for rollback hosts advertising over LAN."
    )
 
 /* Netplay > Host */
 
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_ENABLE_HOST,
-   "Spuštění hostitele netplay"
+   "Host GekkoNet Session"
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_HOST,
-   "Spusťte síťovou hru v režimu hostitele (serveru)."
+   "Launch a rollback server using the settings below."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DISABLE_HOST,

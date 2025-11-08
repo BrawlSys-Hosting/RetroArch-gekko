@@ -5896,101 +5896,6 @@ static int setting_string_action_left_driver(
    return 0;
 }
 
-#ifdef HAVE_NETWORKING
-static int setting_string_action_ok_netplay_mitm_server(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   char enum_idx[16];
-
-   if (!setting)
-      return -1;
-
-   snprintf(enum_idx, sizeof(enum_idx), "%d", setting->enum_idx);
-
-   generic_action_ok_displaylist_push(
-      enum_idx,
-      NULL, NULL, 0, idx, 0,
-      ACTION_OK_DL_DROPDOWN_BOX_LIST_NETPLAY_MITM_SERVER);
-
-   return 0;
-}
-
-static int setting_string_action_left_netplay_mitm_server(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   size_t i;
-   char *netplay_mitm_server;
-   ssize_t offset = -1;
-
-   if (!setting)
-      return -1;
-
-   netplay_mitm_server = setting->value.target.string;
-
-   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
-   {
-      const mitm_server_t *server = &netplay_mitm_server_list[i];
-
-      if (string_is_equal(server->name, netplay_mitm_server))
-      {
-         if (i > 0)
-            offset = i - 1;
-         else if (wraparound)
-            offset = ARRAY_SIZE(netplay_mitm_server_list) - 1;
-         else
-            offset = i;
-
-         break;
-      }
-   }
-
-   if (offset < 0)
-      offset = 0;
-
-   strlcpy(netplay_mitm_server, netplay_mitm_server_list[offset].name,
-      setting->size);
-
-   return 0;
-}
-
-static int setting_string_action_right_netplay_mitm_server(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   size_t i;
-   char *netplay_mitm_server;
-   ssize_t offset = -1;
-
-   if (!setting)
-      return -1;
-
-   netplay_mitm_server = setting->value.target.string;
-
-   for (i = 0; i < ARRAY_SIZE(netplay_mitm_server_list); i++)
-   {
-      const mitm_server_t *server = &netplay_mitm_server_list[i];
-
-      if (string_is_equal(server->name, netplay_mitm_server))
-      {
-         if (i < (ARRAY_SIZE(netplay_mitm_server_list) - 1))
-            offset = i + 1;
-         else if (wraparound)
-            offset = 0;
-         else
-            offset = i;
-
-         break;
-      }
-   }
-
-   if (offset < 0)
-      offset = ARRAY_SIZE(netplay_mitm_server_list) - 1;
-
-   strlcpy(netplay_mitm_server, netplay_mitm_server_list[offset].name,
-      setting->size);
-
-   return 0;
-}
-#endif
 
 static int setting_uint_action_right_crt_switch_resolution_super(
       rarch_setting_t *setting, size_t idx, bool wraparound)
@@ -6729,12 +6634,6 @@ static size_t setting_get_string_representation_uint_replay_checkpoint_interval(
 #endif
 
 #if defined(HAVE_NETWORKING)
-static size_t setting_get_string_representation_netplay_mitm_server(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   return 0;
-}
-
 static size_t setting_get_string_representation_netplay_share_digital(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -22880,58 +22779,21 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.netplay_use_mitm_server,
-                  MENU_ENUM_LABEL_NETPLAY_USE_MITM_SERVER,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
-                  DEFAULT_NETPLAY_USE_MITM_SERVER,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
             CONFIG_STRING(
                   list, list_info,
-                  settings->arrays.netplay_mitm_server,
-                  sizeof(settings->arrays.netplay_mitm_server),
-                  MENU_ENUM_LABEL_NETPLAY_MITM_SERVER,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_MITM_SERVER,
-                  DEFAULT_NETPLAY_MITM_SERVER,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler);
-         (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
-         (*list)[list_info->index - 1].action_ok    = setting_string_action_ok_netplay_mitm_server;
-         (*list)[list_info->index - 1].action_left  = setting_string_action_left_netplay_mitm_server;
-         (*list)[list_info->index - 1].action_right = setting_string_action_right_netplay_mitm_server;
-         (*list)[list_info->index - 1].get_string_representation =
-            &setting_get_string_representation_netplay_mitm_server;
-
-            CONFIG_STRING(
-                  list, list_info,
-                  settings->paths.netplay_custom_mitm_server,
-                  sizeof(settings->paths.netplay_custom_mitm_server),
-                  MENU_ENUM_LABEL_NETPLAY_CUSTOM_MITM_SERVER,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_CUSTOM_MITM_SERVER,
-                  "",
+                  settings->arrays.netplay_desync_handling,
+                  sizeof(settings->arrays.netplay_desync_handling),
+                  MENU_ENUM_LABEL_NETPLAY_DESYNC_HANDLING,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
+                  DEFAULT_NETPLAY_DESYNC_HANDLING,
                   &group_info,
                   &subgroup_info,
                   parent_group,
                   general_write_handler,
                   general_read_handler);
             SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
-            (*list)[list_info->index - 1].ui_type       = ST_UI_TYPE_STRING_LINE_EDIT;
-            (*list)[list_info->index - 1].action_start  = setting_generic_action_start_default;
+            (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_STRING_LINE_EDIT;
+            (*list)[list_info->index - 1].action_start = setting_generic_action_start_default;
 
             CONFIG_STRING(
                   list, list_info,
@@ -23109,41 +22971,6 @@ static bool setting_append_list(
                   general_read_handler,
                   SD_FLAG_NONE);
 
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.netplay_allow_slaves,
-                  MENU_ENUM_LABEL_NETPLAY_ALLOW_SLAVES,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_ALLOW_SLAVES,
-                  DEFAULT_NETPLAY_ALLOW_SLAVES,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-            (*list)[list_info->index - 1].action_ok     = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_left   = &setting_bool_action_left_with_refresh;
-            (*list)[list_info->index - 1].action_right  = &setting_bool_action_right_with_refresh;
-
-            CONFIG_BOOL(
-                  list, list_info,
-                  &settings->bools.netplay_require_slaves,
-                  MENU_ENUM_LABEL_NETPLAY_REQUIRE_SLAVES,
-                  MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
-                  DEFAULT_NETPLAY_REQUIRE_SLAVES,
-                  MENU_ENUM_LABEL_VALUE_OFF,
-                  MENU_ENUM_LABEL_VALUE_ON,
-                  &group_info,
-                  &subgroup_info,
-                  parent_group,
-                  general_write_handler,
-                  general_read_handler,
-                  SD_FLAG_NONE);
-            SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ADVANCED);
-
             CONFIG_INT(
                   list, list_info,
                   &settings->ints.netplay_check_frames,
@@ -23161,10 +22988,10 @@ static bool setting_append_list(
 
             CONFIG_INT(
                   list, list_info,
-                  (int *) &settings->uints.netplay_input_latency_frames_min,
+                  (int *) &settings->uints.netplay_local_delay,
                   MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_MIN,
-                  0,
+                  DEFAULT_NETPLAY_LOCAL_DELAY,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -23176,10 +23003,10 @@ static bool setting_append_list(
 
             CONFIG_INT(
                   list, list_info,
-                  (int *) &settings->uints.netplay_input_latency_frames_range,
+                  (int *) &settings->uints.netplay_prediction_window,
                   MENU_ENUM_LABEL_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
                   MENU_ENUM_LABEL_VALUE_NETPLAY_INPUT_LATENCY_FRAMES_RANGE,
-                  0,
+                  DEFAULT_NETPLAY_PREDICTION_WINDOW,
                   &group_info,
                   &subgroup_info,
                   parent_group,
@@ -23188,6 +23015,21 @@ static bool setting_append_list(
             (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
             (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
             menu_settings_list_current_add_range(list, list_info, 0, 15, 1, true, true);
+
+            CONFIG_INT(
+                  list, list_info,
+                  (int *) &settings->uints.netplay_spectator_limit,
+                  MENU_ENUM_LABEL_NETPLAY_SPECTATOR_LIMIT,
+                  MENU_ENUM_LABEL_VALUE_NETPLAY_SPECTATOR_LIMIT,
+                  DEFAULT_NETPLAY_SPECTATOR_LIMIT,
+                  &group_info,
+                  &subgroup_info,
+                  parent_group,
+                  general_write_handler,
+                  general_read_handler);
+            (*list)[list_info->index - 1].ui_type   = ST_UI_TYPE_UINT_SPINBOX;
+            (*list)[list_info->index - 1].action_ok = &setting_action_ok_uint;
+            menu_settings_list_current_add_range(list, list_info, 0, 255, 1, true, true);
 
             CONFIG_BOOL(
                   list, list_info,
