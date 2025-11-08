@@ -4122,6 +4122,14 @@ MSG_HASH(
    "سواء الإعلان علنا عن ألعاب الشبكة. في حالة عدم التعيين، يجب على العملاء الاتصال يدوياً بدلاً من استخدام الردهة العامة."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_NETPLAY_USE_MITM_SERVER,
+   "Relay Server (Deprecated)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   "Legacy relay toggle preserved for backward compatibility."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_NETPLAY_DESYNC_HANDLING,
    "Desync Handling"
    )
