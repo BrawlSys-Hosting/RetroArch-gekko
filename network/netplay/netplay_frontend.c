@@ -29,7 +29,7 @@
 
 #include <libretro.h>
 #include <lists/string_list.h>
-#include <lrc_hash.h>
+#include <encodings/crc32.h>
 #include <string/stdstring.h>
 
 #include "../../configuration.h"
@@ -38,6 +38,10 @@
 #include "../../runahead.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
+
+#ifdef HAVE_GFX_WIDGETS
+#include "../../gfx/gfx_widgets.h"
+#endif
 
 #include "netplay.h"
 
@@ -257,7 +261,7 @@ static void netplay_handle_save_event(netplay_t *netplay,
    if (!core_serialize_special(&info))
       return;
 
-   payload = (unsigned int)info.actual_size;
+   payload = (unsigned int)info.size;
 
    if (event->data.save.state && event->data.save.state_len)
    {
@@ -269,8 +273,8 @@ static void netplay_handle_save_event(netplay_t *netplay,
    }
 
    if (event->data.save.checksum)
-      *event->data.save.checksum = crc32_calculate(
-            netplay->state_buffer, payload);
+      *event->data.save.checksum = encoding_crc32(
+            0, netplay->state_buffer, payload);
 }
 
 static void netplay_handle_load_event(netplay_t *netplay,
