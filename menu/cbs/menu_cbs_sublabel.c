@@ -987,13 +987,11 @@ static int action_bind_sublabel_netplay_enable_client(file_list_t *list,
       const char *label, const char *path,
       char *s, size_t len)
 {
-   const char *base         = msg_hash_to_str(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT);
-   const char *status_label = msg_hash_to_str(MENU_ENUM_LABEL_STATUS);
-   const char *status_value = NULL;
-   size_t written           = 0;
-   netplay_session_status_info_t status_info;
-   bool have_status = netplay_driver_ctl(
-         RARCH_NETPLAY_CTL_GET_SESSION_STATUS, &status_info);
+   const char *base            = msg_hash_to_str(MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT);
+   const char *status_label    = msg_hash_to_str(MENU_ENUM_LABEL_STATUS);
+   net_driver_state_t *net_st  = networking_state_get_ptr();
+   const char *status_value    = NULL;
+   size_t written              = 0;
 
    (void)list;
    (void)type;
@@ -1006,8 +1004,8 @@ static int action_bind_sublabel_netplay_enable_client(file_list_t *list,
    else if (len > 0)
       s[0] = '\0';
 
-   if (have_status && !string_is_empty(status_info.message))
-      status_value = status_info.message;
+   if (net_st && !string_is_empty(net_st->session_status))
+      status_value = net_st->session_status;
    else
       status_value = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE);
 
@@ -1018,16 +1016,6 @@ static int action_bind_sublabel_netplay_enable_client(file_list_t *list,
 
       written += snprintf(s + written, len - written, "\n%s: %s",
             status_label, status_value);
-   }
-
-   if (have_status && status_info.session_sync_total > 0 && len > written)
-   {
-      const char *sync_label = "Sync";
-
-      written += snprintf(s + written, len - written, "\n%s: %u/%u",
-            sync_label,
-            status_info.session_sync_current,
-            status_info.session_sync_total);
    }
 
    return 0;
