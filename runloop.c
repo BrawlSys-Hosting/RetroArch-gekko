@@ -169,6 +169,20 @@
 #ifdef HAVE_WIFI
 #include "network/wifi_driver.h"
 #endif
+
+#if defined(__GNUC__) || defined(__clang__)
+#define RARCH_WEAK_SYMBOL __attribute__((weak))
+#else
+#define RARCH_WEAK_SYMBOL
+#endif
+
+RARCH_WEAK_SYMBOL void video_frame_net(const void *data,
+      unsigned width, unsigned height, size_t pitch);
+RARCH_WEAK_SYMBOL void audio_sample_net(int16_t left, int16_t right);
+RARCH_WEAK_SYMBOL size_t audio_sample_batch_net(const int16_t *data, size_t frames);
+RARCH_WEAK_SYMBOL int16_t input_state_net(unsigned port, unsigned device,
+      unsigned idx, unsigned id);
+#undef RARCH_WEAK_SYMBOL
 #endif
 
 #ifdef HAVE_THREADS
@@ -7726,14 +7740,23 @@ bool core_set_netplay_callbacks(void)
 
    if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_USE_CORE_PACKET_INTERFACE, NULL))
    {
+      struct retro_callbacks cbs;
+
+      if (!core_set_default_callbacks(&cbs))
+         return false;
+
       /* Force normal poll type for netplay. */
       runloop_st->current_core.poll_type = POLL_TYPE_NORMAL;
 
       /* And use netplay's interceding callbacks */
-      runloop_st->current_core.retro_set_video_refresh(video_frame_net);
-      runloop_st->current_core.retro_set_audio_sample(audio_sample_net);
-      runloop_st->current_core.retro_set_audio_sample_batch(audio_sample_batch_net);
-      runloop_st->current_core.retro_set_input_state(input_state_net);
+      runloop_st->current_core.retro_set_video_refresh(
+            video_frame_net ? video_frame_net : cbs.frame_cb);
+      runloop_st->current_core.retro_set_audio_sample(
+            audio_sample_net ? audio_sample_net : cbs.sample_cb);
+      runloop_st->current_core.retro_set_audio_sample_batch(
+            audio_sample_batch_net ? audio_sample_batch_net : cbs.sample_batch_cb);
+      runloop_st->current_core.retro_set_input_state(
+            input_state_net ? input_state_net : cbs.state_cb);
    }
 
    return true;
