@@ -851,18 +851,35 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
    (void)mitm_session;
 
-   if (net_st->data || !netplay_can_start())
+   if (net_st->data)
+   {
+      RARCH_ERR("[Netplay] Unable to start a new session because one is already active. "
+            "Disconnect before hosting or joining again.\n");
       return false;
+   }
+
+   if (!netplay_can_start())
+   {
+      RARCH_ERR("[Netplay] Netplay driver is disabled; ensure netplay is enabled before hosting or joining.\n");
+      return false;
+   }
 
    if (!core_set_default_callbacks(&cbs))
+   {
+      RARCH_ERR("[Netplay] Failed to configure core callbacks required for netplay.\n");
       return false;
+   }
 
    if (!core_set_netplay_callbacks())
+   {
+      RARCH_ERR("[Netplay] Core does not provide netplay callbacks; rollback netplay cannot be initialised.\n");
       return false;
+   }
 
    netplay = netplay_new();
    if (!netplay)
    {
+      RARCH_ERR("[Netplay] Failed to allocate netplay state.\n");
       core_unset_netplay_callbacks();
       return false;
    }
