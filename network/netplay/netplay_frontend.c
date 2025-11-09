@@ -433,7 +433,14 @@ static void netplay_update_network_stats(netplay_t *netplay)
 
 static bool netplay_pre_frame(netplay_t *netplay)
 {
-   if (!netplay || !netplay->running)
+   /* When netplay is not initialised we should not block the core.
+    * Returning false here prevents the main runloop from advancing,
+    * which manifests as a permanent black screen on local play.
+    */
+   if (!netplay)
+      return true;
+
+   if (!netplay->running)
       return false;
 
    netplay_collect_local_input(netplay);
