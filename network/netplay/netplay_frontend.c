@@ -166,6 +166,21 @@ static void gekkonet_reset_module_path(void)
    g_gekkonet_api.module_path_utf8[0] = '\0';
 }
 
+static bool gekkonet_wide_to_utf8(const wchar_t *src, char *dst, size_t dst_size)
+{
+   if (!src || !dst || !dst_size)
+      return false;
+
+   if (!WideCharToMultiByte(CP_UTF8, 0, src, -1,
+         dst, (int)dst_size, NULL, NULL))
+   {
+      dst[0] = '\0';
+      return false;
+   }
+
+   return true;
+}
+
 static void gekkonet_store_module_path(HMODULE module)
 {
    wchar_t wide_path[MAX_PATH];
@@ -177,9 +192,9 @@ static void gekkonet_store_module_path(HMODULE module)
       return;
    }
 
-   if (!WideCharToMultiByte(CP_UTF8, 0, wide_path, -1,
-            g_gekkonet_api.module_path_utf8,
-            (int)sizeof(g_gekkonet_api.module_path_utf8), NULL, NULL))
+   if (!gekkonet_wide_to_utf8(wide_path,
+         g_gekkonet_api.module_path_utf8,
+         sizeof(g_gekkonet_api.module_path_utf8)))
       gekkonet_reset_module_path();
 }
 
@@ -226,6 +241,13 @@ static void gekkonet_log_win32_error(const char *context, DWORD error_code)
    else
       RARCH_ERR("%s: Win32 error 0x%lx\n", context,
             (unsigned long)error_code);
+
+   if (error_code == ERROR_MOD_NOT_FOUND)
+      RARCH_ERR("[GekkoNet] The DLL or one of its dependencies was not found. "
+            "Ensure libGekkoNet.dll ships with all required runtimes.\n");
+   else if (error_code == ERROR_BAD_EXE_FORMAT)
+      RARCH_ERR("[GekkoNet] The DLL is built for a different architecture. "
+            "Use the 64-bit build of libGekkoNet with 64-bit RetroArch.\n");
 }
 
 static const char *gekkonet_loaded_module_path(void)
@@ -260,36 +282,44 @@ static void gekkonet_log_session_create_failure(void)
 static void gekkonet_log_session_create_failure(void) { }
 #endif
 
-static HMODULE gekkonet_try_load_from_directory(const wchar_t *filename)
+static bool gekkonet_build_module_path(const wchar_t *filename,
+      wchar_t *buffer, size_t capacity)
 {
-   wchar_t module_path[MAX_PATH];
-   DWORD   length = GetModuleFileNameW(NULL, module_path, MAX_PATH);
+   DWORD length;
 
-   if (!length || length >= MAX_PATH)
-      return NULL;
+   if (!filename || !buffer || !capacity)
+      return false;
+
+   length = GetModuleFileNameW(NULL, buffer, (DWORD)capacity);
+
+   if (!length || length >= capacity)
+      return false;
 
    {
-      wchar_t *last_sep = wcsrchr(module_path, L'\\');
+      wchar_t *last_sep = wcsrchr(buffer, L'\\');
       if (last_sep)
       {
-         size_t base_len      = (size_t)(last_sep + 1 - module_path);
+         size_t base_len      = (size_t)(last_sep + 1 - buffer);
          size_t filename_len  = wcslen(filename);
          size_t required_size = base_len + filename_len;
 
-         if (required_size + 1 < MAX_PATH)
+         if (required_size + 1 < capacity)
          {
             wmemcpy(last_sep + 1, filename, filename_len + 1);
-            return LoadLibraryW(module_path);
+            return true;
          }
       }
    }
 
-   return NULL;
+   return false;
 }
 
 static bool gekkonet_load_library(void)
 {
    HMODULE module;
+   wchar_t module_path[MAX_PATH];
+   char    module_path_utf8[GEKKONET_MAX_PATH_UTF8];
+   bool    have_module_path = false;
 
    if (g_gekkonet_api.module)
       return true;
@@ -302,7 +332,23 @@ static bool gekkonet_load_library(void)
    g_gekkonet_api.last_error     = NULL;
    gekkonet_reset_module_path();
 
-   module = gekkonet_try_load_from_directory(L"libGekkoNet.dll");
+   module = NULL;
+   module_path_utf8[0] = '\0';
+
+   if (gekkonet_build_module_path(L"libGekkoNet.dll",
+         module_path, ARRAY_SIZE(module_path)))
+   {
+      have_module_path = true;
+      if (!gekkonet_wide_to_utf8(module_path,
+            module_path_utf8, sizeof(module_path_utf8)))
+         module_path_utf8[0] = '\0';
+
+      module = LoadLibraryW(module_path);
+      if (!module && module_path_utf8[0])
+         RARCH_ERR("[GekkoNet] Attempted to load: %s\n",
+               module_path_utf8);
+   }
+
    if (!module)
    {
       module = LoadLibraryW(L"libGekkoNet.dll");
@@ -310,6 +356,24 @@ static bool gekkonet_load_library(void)
       {
          DWORD error = GetLastError();
          RARCH_ERR("[GekkoNet] Failed to load libGekkoNet.dll\n");
+         if (!have_module_path)
+         {
+            wchar_t fallback_path[MAX_PATH];
+            if (GetModuleFileNameW(NULL, fallback_path,
+                     ARRAY_SIZE(fallback_path)))
+            {
+               wchar_t *last_sep = wcsrchr(fallback_path, L'\\');
+               if (last_sep)
+               {
+                  *(last_sep + 1) = L'\0';
+                  if (gekkonet_wide_to_utf8(fallback_path,
+                           module_path_utf8,
+                           sizeof(module_path_utf8)))
+                     RARCH_ERR("[GekkoNet] RetroArch executable directory: %s\n",
+                           module_path_utf8);
+               }
+            }
+         }
          if (error)
             gekkonet_log_win32_error("[GekkoNet] LoadLibraryW", error);
          g_gekkonet_api.attempted_load = false;
