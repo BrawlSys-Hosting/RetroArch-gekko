@@ -46,6 +46,7 @@
 #endif
 
 #include "netplay.h"
+#include "netplay_private.h"
 
 #if defined(_WIN32)
 #include "../../gekkonet/windows/include/gekkonet.h"
@@ -74,30 +75,6 @@ static const unsigned netplay_button_map[NETPLAY_BUTTON_COUNT] = {
    RETRO_DEVICE_ID_JOYPAD_R2,
    RETRO_DEVICE_ID_JOYPAD_L3,
    RETRO_DEVICE_ID_JOYPAD_R3
-};
-
-struct netplay
-{
-   GekkoSession *session;
-   GekkoNetAdapter *adapter;
-   int local_handle;
-   unsigned char num_players;
-   unsigned char input_prediction_window;
-   unsigned char spectator_delay;
-   size_t state_size;
-   uint8_t *state_buffer;
-   uint8_t *authoritative_input;
-   size_t authoritative_size;
-   bool authoritative_valid;
-   uint16_t local_input_mask;
-   bool running;
-   bool connected;
-   bool session_started;
-   bool spectator;
-   bool allow_pause;
-   bool allow_timeskip;
-   unsigned current_frame;
-   struct retro_callbacks cbs;
 };
 
 static net_driver_state_t networking_driver_st;
@@ -468,7 +445,7 @@ static bool netplay_apply_settings(netplay_t *netplay,
    if (!netplay || !settings)
       return false;
 
-   netplay->allow_pause = settings->bools.netplay_allow_pausing;
+   netplay->allow_pausing = settings->bools.netplay_allow_pausing;
 
    desync_mode = settings->arrays.netplay_desync_handling;
    if (string_is_empty(desync_mode))
@@ -705,7 +682,7 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
       case RARCH_NETPLAY_CTL_IS_DATA_INITED:
          return netplay && netplay->session_started;
       case RARCH_NETPLAY_CTL_ALLOW_PAUSE:
-         return netplay ? netplay->allow_pause : false;
+         return netplay ? netplay->allow_pausing : false;
       case RARCH_NETPLAY_CTL_ALLOW_TIMESKIP:
          return netplay ? netplay->allow_timeskip : false;
       case RARCH_NETPLAY_CTL_PAUSE:
