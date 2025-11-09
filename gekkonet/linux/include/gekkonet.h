@@ -53,7 +53,10 @@ extern "C" {
 /* GekkoNet is mostly self contained memory wise using internal memory buffers. */
 /* Technically the user shouldnt need to free or create any memory (look at the examples). */
 /* The only case the user needs to create memory is when slotting in their own GekkoNetAdapter */
+#ifndef GEKKONET_SESSION_TYPE_DEFINED
 typedef struct GekkoSession GekkoSession;
+#define GEKKONET_SESSION_TYPE_DEFINED
+#endif
 
 typedef struct GekkoConfig {
     unsigned char num_players;
@@ -84,7 +87,12 @@ typedef struct GekkoNetResult {
     void* data;
 } GekkoNetResult;
 
-typedef struct GekkoNetAdapter {
+#ifndef GEKKONET_ADAPTER_TYPE_DEFINED
+typedef struct GekkoNetAdapter GekkoNetAdapter;
+#define GEKKONET_ADAPTER_TYPE_DEFINED
+#endif
+
+struct GekkoNetAdapter {
     /* send data to another peer */
     void (*send_data)(GekkoNetAddress* addr, const char* data, int length);
     /* receive all packets accumulated between the last frame and now */
@@ -93,7 +101,7 @@ typedef struct GekkoNetAdapter {
     GekkoNetResult** (*receive_data)(int* length);
     /* free data function so gekkonet can cleanup data that the user created. */
     void (*free_data)(void* data_ptr);
-} GekkoNetAdapter;
+};
 
 typedef enum GekkoGameEventType {
     EmptyGameEvent = -1,

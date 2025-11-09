@@ -21,9 +21,18 @@
 #include "netplay.h"
 #include "netplay_protocol.h"
 
-/* Forward declarations for the GekkoNet integration. */
+/* Forward declarations for the GekkoNet integration.
+ * We define guard macros to avoid re-typedefs when the
+ * platform-specific headers are included afterwards. */
+#ifndef GEKKONET_SESSION_TYPE_DEFINED
 typedef struct GekkoSession GekkoSession;
+#define GEKKONET_SESSION_TYPE_DEFINED
+#endif
+
+#ifndef GEKKONET_ADAPTER_TYPE_DEFINED
 typedef struct GekkoNetAdapter GekkoNetAdapter;
+#define GEKKONET_ADAPTER_TYPE_DEFINED
+#endif
 
 
 #include <libretro.h>
