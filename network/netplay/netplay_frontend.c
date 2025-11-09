@@ -49,11 +49,22 @@
 #include "netplay_private.h"
 
 #if defined(_WIN32)
+#if defined(_MSC_VER)
+#define GEKKONET_STATIC
+#endif
 #include "../../gekkonet/windows/include/gekkonet.h"
 #elif defined(__APPLE__)
 #include "../../gekkonet/mac/include/gekkonet.h"
 #else
 #include "../../gekkonet/linux/include/gekkonet.h"
+#endif
+
+#if defined(_WIN32) && defined(_MSC_VER)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#include <wchar.h>
 #endif
 
 #define NETPLAY_BUTTON_COUNT 16
@@ -107,13 +118,267 @@ static void netplay_session_status_reset(void)
    netplay_session_status_set(fallback, 0, 0);
 }
 
+#if defined(_WIN32) && defined(_MSC_VER)
+#define GEKKONET_DYNAMIC_LOAD 1
+#endif
+
+#if defined(GEKKONET_DYNAMIC_LOAD)
+typedef bool (__cdecl *gekkonet_create_proc_t)(GekkoSession **session);
+typedef bool (__cdecl *gekkonet_destroy_proc_t)(GekkoSession *session);
+typedef void (__cdecl *gekkonet_start_proc_t)(GekkoSession *session, GekkoConfig *config);
+typedef void (__cdecl *gekkonet_net_adapter_set_proc_t)(GekkoSession *session, GekkoNetAdapter *adapter);
+typedef int  (__cdecl *gekkonet_add_actor_proc_t)(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr);
+typedef void (__cdecl *gekkonet_add_local_input_proc_t)(GekkoSession *session, int player, void *input);
+typedef GekkoGameEvent **(__cdecl *gekkonet_update_session_proc_t)(GekkoSession *session, int *count);
+typedef GekkoSessionEvent **(__cdecl *gekkonet_session_events_proc_t)(GekkoSession *session, int *count);
+typedef void (__cdecl *gekkonet_network_stats_proc_t)(GekkoSession *session, int player, GekkoNetworkStats *stats);
+typedef void (__cdecl *gekkonet_network_poll_proc_t)(GekkoSession *session);
+typedef GekkoNetAdapter *(__cdecl *gekkonet_default_adapter_proc_t)(unsigned short port);
+
+typedef struct gekkonet_dynamic_api
+{
+   HMODULE                           module;
+   bool                              attempted_load;
+   gekkonet_create_proc_t            create;
+   gekkonet_destroy_proc_t           destroy;
+   gekkonet_start_proc_t             start;
+   gekkonet_net_adapter_set_proc_t   net_adapter_set;
+   gekkonet_add_actor_proc_t         add_actor;
+   gekkonet_add_local_input_proc_t   add_local_input;
+   gekkonet_update_session_proc_t    update_session;
+   gekkonet_session_events_proc_t    session_events;
+   gekkonet_network_stats_proc_t     network_stats;
+   gekkonet_network_poll_proc_t      network_poll;
+   gekkonet_default_adapter_proc_t   default_adapter;
+} gekkonet_dynamic_api_t;
+
+static gekkonet_dynamic_api_t g_gekkonet_api;
+
+static HMODULE gekkonet_try_load_from_directory(const wchar_t *filename)
+{
+   wchar_t module_path[MAX_PATH];
+   DWORD   length = GetModuleFileNameW(NULL, module_path, MAX_PATH);
+
+   if (!length || length >= MAX_PATH)
+      return NULL;
+
+   {
+      wchar_t *last_sep = wcsrchr(module_path, L'\\');
+      if (last_sep)
+      {
+         size_t base_len      = (size_t)(last_sep + 1 - module_path);
+         size_t filename_len  = wcslen(filename);
+         size_t required_size = base_len + filename_len;
+
+         if (required_size + 1 < MAX_PATH)
+         {
+            wmemcpy(last_sep + 1, filename, filename_len + 1);
+            return LoadLibraryW(module_path);
+         }
+      }
+   }
+
+   return NULL;
+}
+
+static bool gekkonet_load_library(void)
+{
+   HMODULE module;
+
+   if (g_gekkonet_api.module)
+      return true;
+
+   if (g_gekkonet_api.attempted_load)
+      return false;
+
+   g_gekkonet_api.attempted_load = true;
+
+   module = gekkonet_try_load_from_directory(L"libGekkoNet.dll");
+   if (!module)
+      module = LoadLibraryW(L"libGekkoNet.dll");
+
+   if (!module)
+   {
+      RARCH_ERR("[GekkoNet] Failed to load libGekkoNet.dll\n");
+      return false;
+   }
+
+   g_gekkonet_api.module = module;
+
+#define GEKKONET_RESOLVE(symbol) \
+   do { \
+      g_gekkonet_api.symbol = (gekkonet_##symbol##_proc_t)GetProcAddress(module, "gekko_" #symbol); \
+      if (!g_gekkonet_api.symbol) \
+      { \
+         RARCH_ERR("[GekkoNet] Missing symbol: gekko_" #symbol "\n"); \
+         FreeLibrary(module); \
+         g_gekkonet_api.module = NULL; \
+         return false; \
+      } \
+   } while (0)
+
+   GEKKONET_RESOLVE(create);
+   GEKKONET_RESOLVE(destroy);
+   GEKKONET_RESOLVE(start);
+   GEKKONET_RESOLVE(net_adapter_set);
+   GEKKONET_RESOLVE(add_actor);
+   GEKKONET_RESOLVE(add_local_input);
+   GEKKONET_RESOLVE(update_session);
+   GEKKONET_RESOLVE(session_events);
+   GEKKONET_RESOLVE(network_stats);
+   GEKKONET_RESOLVE(network_poll);
+   GEKKONET_RESOLVE(default_adapter);
+
+#undef GEKKONET_RESOLVE
+
+   return true;
+}
+
+static bool gekkonet_api_create(GekkoSession **session)
+{
+   if (!gekkonet_load_library())
+      return false;
+   return g_gekkonet_api.create(session);
+}
+
+static bool gekkonet_api_destroy(GekkoSession *session)
+{
+   if (!session)
+      return true;
+   if (!gekkonet_load_library())
+      return false;
+   return g_gekkonet_api.destroy(session);
+}
+
+static void gekkonet_api_start(GekkoSession *session, GekkoConfig *config)
+{
+   if (!gekkonet_load_library())
+      return;
+   g_gekkonet_api.start(session, config);
+}
+
+static void gekkonet_api_net_adapter_set(GekkoSession *session, GekkoNetAdapter *adapter)
+{
+   if (!gekkonet_load_library())
+      return;
+   g_gekkonet_api.net_adapter_set(session, adapter);
+}
+
+static int gekkonet_api_add_actor(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr)
+{
+   if (!gekkonet_load_library())
+      return -1;
+   return g_gekkonet_api.add_actor(session, player_type, addr);
+}
+
+static void gekkonet_api_add_local_input(GekkoSession *session, int player, void *input)
+{
+   if (!gekkonet_load_library())
+      return;
+   g_gekkonet_api.add_local_input(session, player, input);
+}
+
+static GekkoGameEvent **gekkonet_api_update_session(GekkoSession *session, int *count)
+{
+   if (!gekkonet_load_library())
+      return NULL;
+   return g_gekkonet_api.update_session(session, count);
+}
+
+static GekkoSessionEvent **gekkonet_api_session_events(GekkoSession *session, int *count)
+{
+   if (!gekkonet_load_library())
+      return NULL;
+   return g_gekkonet_api.session_events(session, count);
+}
+
+static void gekkonet_api_network_stats(GekkoSession *session, int player, GekkoNetworkStats *stats)
+{
+   if (!gekkonet_load_library())
+      return;
+   g_gekkonet_api.network_stats(session, player, stats);
+}
+
+static void gekkonet_api_network_poll(GekkoSession *session)
+{
+   if (!gekkonet_load_library())
+      return;
+   g_gekkonet_api.network_poll(session);
+}
+
+static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
+{
+   if (!gekkonet_load_library())
+      return NULL;
+   return g_gekkonet_api.default_adapter(port);
+}
+
+#else
+
+static inline bool gekkonet_api_create(GekkoSession **session)
+{
+   return gekko_create(session);
+}
+
+static inline bool gekkonet_api_destroy(GekkoSession *session)
+{
+   return !session || gekko_destroy(session);
+}
+
+static inline void gekkonet_api_start(GekkoSession *session, GekkoConfig *config)
+{
+   gekko_start(session, config);
+}
+
+static inline void gekkonet_api_net_adapter_set(GekkoSession *session, GekkoNetAdapter *adapter)
+{
+   gekko_net_adapter_set(session, adapter);
+}
+
+static inline int gekkonet_api_add_actor(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr)
+{
+   return gekko_add_actor(session, player_type, addr);
+}
+
+static inline void gekkonet_api_add_local_input(GekkoSession *session, int player, void *input)
+{
+   gekko_add_local_input(session, player, input);
+}
+
+static inline GekkoGameEvent **gekkonet_api_update_session(GekkoSession *session, int *count)
+{
+   return gekko_update_session(session, count);
+}
+
+static inline GekkoSessionEvent **gekkonet_api_session_events(GekkoSession *session, int *count)
+{
+   return gekko_session_events(session, count);
+}
+
+static inline void gekkonet_api_network_stats(GekkoSession *session, int player, GekkoNetworkStats *stats)
+{
+   gekko_network_stats(session, player, stats);
+}
+
+static inline void gekkonet_api_network_poll(GekkoSession *session)
+{
+   gekko_network_poll(session);
+}
+
+static inline GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
+{
+   return gekko_default_adapter(port);
+}
+
+#endif
+
 static void netplay_free(netplay_t *netplay)
 {
    if (!netplay)
       return;
 
    if (netplay->session)
-      gekko_destroy(netplay->session);
+      gekkonet_api_destroy(netplay->session);
 
    (void)netplay->adapter;
 
@@ -219,7 +484,7 @@ static void netplay_collect_local_input(netplay_t *netplay)
 
    netplay->local_input_mask = mask;
    if (netplay->session && netplay->local_handle >= 0)
-      gekko_add_local_input(netplay->session, netplay->local_handle,
+      gekkonet_api_add_local_input(netplay->session, netplay->local_handle,
             &netplay->local_input_mask);
 }
 
@@ -283,7 +548,7 @@ static void netplay_handle_game_events(netplay_t *netplay)
    if (!netplay || !netplay->session)
       return;
 
-   events = gekko_update_session(netplay->session, &count);
+   events = gekkonet_api_update_session(netplay->session, &count);
    for (; count > 0 && events; count--, events++)
    {
       GekkoGameEvent *event = *events;
@@ -319,7 +584,7 @@ static void netplay_handle_session_events(netplay_t *netplay)
    if (!netplay || !netplay->session)
       return;
 
-   events = gekko_session_events(netplay->session, &count);
+   events = gekkonet_api_session_events(netplay->session, &count);
    for (; count > 0 && events; count--, events++)
    {
       GekkoSessionEvent *event = *events;
@@ -405,7 +670,7 @@ static void netplay_update_network_stats(netplay_t *netplay)
       return;
 
    net_st = &networking_driver_st;
-   gekko_network_stats(netplay->session, netplay->local_handle, &stats);
+   gekkonet_api_network_stats(netplay->session, netplay->local_handle, &stats);
    net_st->latest_ping = stats.last_ping;
 }
 
@@ -434,7 +699,7 @@ static void netplay_post_frame(netplay_t *netplay)
    netplay_pump_events(netplay);
    netplay_update_network_stats(netplay);
    if (netplay->session)
-      gekko_network_poll(netplay->session);
+      gekkonet_api_network_poll(netplay->session);
 }
 
 static bool netplay_apply_settings(netplay_t *netplay,
@@ -476,7 +741,7 @@ static bool netplay_setup_session(netplay_t *netplay,
    if (!netplay)
       return false;
 
-   if (!netplay->session && !gekko_create(&netplay->session))
+   if (!netplay->session && !gekkonet_api_create(&netplay->session))
       return false;
 
    if (!netplay_apply_settings(netplay, settings))
@@ -494,14 +759,14 @@ static bool netplay_setup_session(netplay_t *netplay,
    cfg.post_sync_joining       = true;
    cfg.desync_detection        = true;
 
-   netplay->adapter = gekko_default_adapter((unsigned short)port);
+   netplay->adapter = gekkonet_api_default_adapter((unsigned short)port);
    if (!netplay->adapter)
       return false;
 
-   gekko_net_adapter_set(netplay->session, netplay->adapter);
-   gekko_start(netplay->session, &cfg);
+   gekkonet_api_net_adapter_set(netplay->session, netplay->adapter);
+   gekkonet_api_start(netplay->session, &cfg);
 
-   netplay->local_handle = gekko_add_actor(netplay->session,
+   netplay->local_handle = gekkonet_api_add_actor(netplay->session,
          LocalPlayer, NULL);
    if (netplay->local_handle < 0)
       return false;
