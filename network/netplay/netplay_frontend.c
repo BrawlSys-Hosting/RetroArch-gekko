@@ -76,7 +76,7 @@ static const unsigned netplay_button_map[NETPLAY_BUTTON_COUNT] = {
    RETRO_DEVICE_ID_JOYPAD_R3
 };
 
-typedef struct netplay
+struct netplay
 {
    GekkoSession *session;
    GekkoNetAdapter *adapter;
@@ -98,7 +98,7 @@ typedef struct netplay
    bool allow_timeskip;
    unsigned current_frame;
    struct retro_callbacks cbs;
-} netplay_t;
+};
 
 static net_driver_state_t networking_driver_st;
 
@@ -201,6 +201,10 @@ static void netplay_copy_authoritative_input(netplay_t *netplay,
 
 static uint16_t netplay_get_port_mask(const netplay_t *netplay, unsigned port)
 {
+   size_t per_player;
+   size_t offset;
+   uint16_t mask;
+
    if (!netplay || !netplay->authoritative_valid)
       return 0;
 
@@ -210,17 +214,14 @@ static uint16_t netplay_get_port_mask(const netplay_t *netplay, unsigned port)
    if (netplay->authoritative_size < sizeof(uint16_t))
       return 0;
 
-   {
-      size_t per_player = sizeof(uint16_t);
-      size_t offset     = per_player * port;
+   per_player = sizeof(uint16_t);
+   offset     = per_player * port;
 
-      if (offset + per_player > netplay->authoritative_size)
-         return 0;
+   if (offset + per_player > netplay->authoritative_size)
+      return 0;
 
-      uint16_t mask;
-      memcpy(&mask, netplay->authoritative_input + offset, sizeof(mask));
-      return mask;
-   }
+   memcpy(&mask, netplay->authoritative_input + offset, sizeof(mask));
+   return mask;
 }
 
 static void netplay_collect_local_input(netplay_t *netplay)
