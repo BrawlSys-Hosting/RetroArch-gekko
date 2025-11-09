@@ -401,13 +401,19 @@ static bool netplay_refresh_serialization(netplay_t *netplay)
 
    size = core_serialize_size_special();
    if (!size)
+   {
+      RARCH_ERR("[Netplay] Core did not report a save state size; rollback netplay requires save-state capable content.\n");
       return false;
+   }
 
    if (size != netplay->state_size)
    {
       uint8_t *new_buf = (uint8_t*)realloc(netplay->state_buffer, size);
       if (!new_buf)
+      {
+         RARCH_ERR("[Netplay] Failed to allocate %zu bytes for the serialization buffer.\n", size);
          return false;
+      }
       netplay->state_buffer = new_buf;
       netplay->state_size   = size;
    }
@@ -730,7 +736,13 @@ static bool netplay_apply_settings(netplay_t *netplay,
       (settings->uints.netplay_local_delay <= 255
          ? settings->uints.netplay_local_delay : 255);
 
-   return netplay_refresh_serialization(netplay);
+   if (!netplay_refresh_serialization(netplay))
+   {
+      RARCH_ERR("[Netplay] Unable to prepare serialization buffers; ensure the current core and content support save states.\n");
+      return false;
+   }
+
+   return true;
 }
 
 static bool netplay_setup_session(netplay_t *netplay,
@@ -742,7 +754,10 @@ static bool netplay_setup_session(netplay_t *netplay,
       return false;
 
    if (!netplay->session && !gekkonet_api_create(&netplay->session))
+   {
+      RARCH_ERR("[GekkoNet] Failed to create a session. Confirm that libGekkoNet is present and up to date.\n");
       return false;
+   }
 
    if (!netplay_apply_settings(netplay, settings))
       return false;
@@ -761,7 +776,11 @@ static bool netplay_setup_session(netplay_t *netplay,
 
    netplay->adapter = gekkonet_api_default_adapter((unsigned short)port);
    if (!netplay->adapter)
+   {
+      RARCH_ERR("[GekkoNet] Unable to create the default UDP adapter on port %u. Check firewall rules or choose a different port.\n",
+            port);
       return false;
+   }
 
    gekkonet_api_net_adapter_set(netplay->session, netplay->adapter);
    gekkonet_api_start(netplay->session, &cfg);
@@ -769,7 +788,10 @@ static bool netplay_setup_session(netplay_t *netplay,
    netplay->local_handle = gekkonet_api_add_actor(netplay->session,
          LocalPlayer, NULL);
    if (netplay->local_handle < 0)
+   {
+      RARCH_ERR("[GekkoNet] Failed to register the local player with the current session.\n");
       return false;
+   }
 
    return true;
 }
@@ -829,18 +851,35 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
    (void)mitm_session;
 
-   if (net_st->data || !netplay_can_start())
+   if (net_st->data)
+   {
+      RARCH_ERR("[Netplay] Unable to start a new session because one is already active. "
+            "Disconnect before hosting or joining again.\n");
       return false;
+   }
+
+   if (!netplay_can_start())
+   {
+      RARCH_ERR("[Netplay] Netplay driver is disabled; ensure netplay is enabled before hosting or joining.\n");
+      return false;
+   }
 
    if (!core_set_default_callbacks(&cbs))
+   {
+      RARCH_ERR("[Netplay] Failed to configure core callbacks required for netplay.\n");
       return false;
+   }
 
    if (!core_set_netplay_callbacks())
+   {
+      RARCH_ERR("[Netplay] Core does not provide netplay callbacks; rollback netplay cannot be initialised.\n");
       return false;
+   }
 
    netplay = netplay_new();
    if (!netplay)
    {
+      RARCH_ERR("[Netplay] Failed to allocate netplay state.\n");
       core_unset_netplay_callbacks();
       return false;
    }
