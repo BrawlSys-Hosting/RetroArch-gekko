@@ -38,6 +38,8 @@
 #include "../../runahead.h"
 #include "../../verbosity.h"
 #include "../../msg_hash.h"
+#include "../../audio/audio_driver.h"
+#include "../../gfx/video_driver.h"
 
 #ifdef HAVE_GFX_WIDGETS
 #include "../../gfx/gfx_widgets.h"
@@ -971,3 +973,37 @@ const gfx_widget_t gfx_widget_netplay_ping = {
    &gfx_widget_netplay_ping_frame
 };
 #endif
+
+void video_frame_net(const void *data,
+      unsigned width, unsigned height, size_t pitch)
+{
+   net_driver_state_t *net_st  = &networking_driver_st;
+   netplay_t          *netplay = net_st ? net_st->data : NULL;
+
+   if (netplay && netplay->cbs.frame_cb)
+      netplay->cbs.frame_cb(data, width, height, pitch);
+   else
+      video_driver_frame(data, width, height, pitch);
+}
+
+void audio_sample_net(int16_t left, int16_t right)
+{
+   net_driver_state_t *net_st  = &networking_driver_st;
+   netplay_t          *netplay = net_st ? net_st->data : NULL;
+
+   if (netplay && netplay->cbs.sample_cb)
+      netplay->cbs.sample_cb(left, right);
+   else
+      audio_driver_sample(left, right);
+}
+
+size_t audio_sample_batch_net(const int16_t *data, size_t frames)
+{
+   net_driver_state_t *net_st  = &networking_driver_st;
+   netplay_t          *netplay = net_st ? net_st->data : NULL;
+
+   if (netplay && netplay->cbs.sample_batch_cb)
+      return netplay->cbs.sample_batch_cb(data, frames);
+
+   return audio_driver_sample_batch(data, frames);
+}
