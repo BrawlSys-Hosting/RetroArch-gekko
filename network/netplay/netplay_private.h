@@ -21,6 +21,11 @@
 #include "netplay.h"
 #include "netplay_protocol.h"
 
+/* Forward declarations for the GekkoNet integration. */
+typedef struct GekkoSession GekkoSession;
+typedef struct GekkoNetAdapter GekkoNetAdapter;
+
+
 #include <libretro.h>
 
 #include <streams/trans_stream.h>
@@ -686,6 +691,25 @@ struct netplay
 
    /* Host settings */
    bool allow_pausing;
+
+   /* GekkoNet frontend state */
+   GekkoSession    *session;
+   GekkoNetAdapter *adapter;
+   int              local_handle;
+   unsigned char    num_players;
+   unsigned char    input_prediction_window;
+   unsigned char    spectator_delay;
+   uint8_t         *state_buffer;
+   uint8_t         *authoritative_input;
+   size_t           authoritative_size;
+   bool             authoritative_valid;
+   uint16_t         local_input_mask;
+   bool             running;
+   bool             connected;
+   bool             session_started;
+   bool             spectator;
+   bool             allow_timeskip;
+   unsigned         current_frame;
 };
 
 void video_frame_net(const void *data,
