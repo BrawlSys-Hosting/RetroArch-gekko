@@ -315,57 +315,57 @@ static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
 
 #else
 
-static inline bool gekkonet_api_create(GekkoSession **session)
+static bool gekkonet_api_create(GekkoSession **session)
 {
    return gekko_create(session);
 }
 
-static inline bool gekkonet_api_destroy(GekkoSession *session)
+static bool gekkonet_api_destroy(GekkoSession *session)
 {
    return !session || gekko_destroy(session);
 }
 
-static inline void gekkonet_api_start(GekkoSession *session, GekkoConfig *config)
+static void gekkonet_api_start(GekkoSession *session, GekkoConfig *config)
 {
    gekko_start(session, config);
 }
 
-static inline void gekkonet_api_net_adapter_set(GekkoSession *session, GekkoNetAdapter *adapter)
+static void gekkonet_api_net_adapter_set(GekkoSession *session, GekkoNetAdapter *adapter)
 {
    gekko_net_adapter_set(session, adapter);
 }
 
-static inline int gekkonet_api_add_actor(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr)
+static int gekkonet_api_add_actor(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr)
 {
    return gekko_add_actor(session, player_type, addr);
 }
 
-static inline void gekkonet_api_add_local_input(GekkoSession *session, int player, void *input)
+static void gekkonet_api_add_local_input(GekkoSession *session, int player, void *input)
 {
    gekko_add_local_input(session, player, input);
 }
 
-static inline GekkoGameEvent **gekkonet_api_update_session(GekkoSession *session, int *count)
+static GekkoGameEvent **gekkonet_api_update_session(GekkoSession *session, int *count)
 {
    return gekko_update_session(session, count);
 }
 
-static inline GekkoSessionEvent **gekkonet_api_session_events(GekkoSession *session, int *count)
+static GekkoSessionEvent **gekkonet_api_session_events(GekkoSession *session, int *count)
 {
    return gekko_session_events(session, count);
 }
 
-static inline void gekkonet_api_network_stats(GekkoSession *session, int player, GekkoNetworkStats *stats)
+static void gekkonet_api_network_stats(GekkoSession *session, int player, GekkoNetworkStats *stats)
 {
    gekko_network_stats(session, player, stats);
 }
 
-static inline void gekkonet_api_network_poll(GekkoSession *session)
+static void gekkonet_api_network_poll(GekkoSession *session)
 {
    gekko_network_poll(session);
 }
 
-static inline GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
+static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
 {
    return gekko_default_adapter(port);
 }
