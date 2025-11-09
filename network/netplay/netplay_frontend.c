@@ -860,8 +860,27 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
    if (!netplay_can_start())
    {
-      RARCH_ERR("[Netplay] Netplay driver is disabled; ensure netplay is enabled before hosting or joining.\n");
-      return false;
+      bool auto_enabled = false;
+      bool want_client  = false;
+
+      /* If we were passed a server string (joining or MITM connection)
+       * assume the caller wants the client driver enabled. Otherwise
+       * prefer the server driver. */
+      if (server && !string_is_empty(server))
+         want_client = true;
+      else if (net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT)
+         want_client = true;
+
+      if (want_client)
+         auto_enabled = netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+      else
+         auto_enabled = netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+
+      if (!auto_enabled || !netplay_can_start())
+      {
+         RARCH_ERR("[Netplay] Netplay driver is disabled; enable it from Settings > Network > Netplay or use the host/client menu entries before starting a session.\n");
+         return false;
+      }
    }
 
    if (!core_set_default_callbacks(&cbs))
