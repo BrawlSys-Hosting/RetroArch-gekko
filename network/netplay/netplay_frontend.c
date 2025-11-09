@@ -123,6 +123,8 @@ static void netplay_session_status_reset(void)
 #endif
 
 #if defined(GEKKONET_DYNAMIC_LOAD)
+#define GEKKONET_MAX_PATH_UTF8 (MAX_PATH * 3)
+
 typedef bool (__cdecl *gekkonet_create_proc_t)(GekkoSession **session);
 typedef bool (__cdecl *gekkonet_destroy_proc_t)(GekkoSession *session);
 typedef void (__cdecl *gekkonet_start_proc_t)(GekkoSession *session, GekkoConfig *config);
@@ -134,11 +136,14 @@ typedef GekkoSessionEvent **(__cdecl *gekkonet_session_events_proc_t)(GekkoSessi
 typedef void (__cdecl *gekkonet_network_stats_proc_t)(GekkoSession *session, int player, GekkoNetworkStats *stats);
 typedef void (__cdecl *gekkonet_network_poll_proc_t)(GekkoSession *session);
 typedef GekkoNetAdapter *(__cdecl *gekkonet_default_adapter_proc_t)(unsigned short port);
+typedef const char *(__cdecl *gekkonet_last_error_proc_t)(void);
 
 typedef struct gekkonet_dynamic_api
 {
    HMODULE                           module;
    bool                              attempted_load;
+   bool                              load_failed;
+   char                              module_path_utf8[GEKKONET_MAX_PATH_UTF8];
    gekkonet_create_proc_t            create;
    gekkonet_destroy_proc_t           destroy;
    gekkonet_start_proc_t             start;
@@ -150,9 +155,110 @@ typedef struct gekkonet_dynamic_api
    gekkonet_network_stats_proc_t     network_stats;
    gekkonet_network_poll_proc_t      network_poll;
    gekkonet_default_adapter_proc_t   default_adapter;
+   gekkonet_last_error_proc_t        last_error;
 } gekkonet_dynamic_api_t;
 
 static gekkonet_dynamic_api_t g_gekkonet_api;
+
+#if defined(GEKKONET_DYNAMIC_LOAD)
+static void gekkonet_reset_module_path(void)
+{
+   g_gekkonet_api.module_path_utf8[0] = '\0';
+}
+
+static void gekkonet_store_module_path(HMODULE module)
+{
+   wchar_t wide_path[MAX_PATH];
+   DWORD   len = GetModuleFileNameW(module, wide_path, MAX_PATH);
+
+   if (!len || len >= MAX_PATH)
+   {
+      gekkonet_reset_module_path();
+      return;
+   }
+
+   if (!WideCharToMultiByte(CP_UTF8, 0, wide_path, -1,
+            g_gekkonet_api.module_path_utf8,
+            (int)sizeof(g_gekkonet_api.module_path_utf8), NULL, NULL))
+      gekkonet_reset_module_path();
+}
+
+static void gekkonet_trim_newlines(char *str)
+{
+   size_t len;
+
+   if (!str)
+      return;
+
+   len = strlen(str);
+   while (len && (str[len - 1] == '\r' || str[len - 1] == '\n'))
+   {
+      str[len - 1] = '\0';
+      len--;
+   }
+}
+
+static void gekkonet_log_win32_error(const char *context, DWORD error_code)
+{
+   LPWSTR wide_msg = NULL;
+   DWORD  flags    = FORMAT_MESSAGE_ALLOCATE_BUFFER
+      | FORMAT_MESSAGE_FROM_SYSTEM
+      | FORMAT_MESSAGE_IGNORE_INSERTS;
+   DWORD  len      = FormatMessageW(flags, NULL, error_code,
+         MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+         (LPWSTR)&wide_msg, 0, NULL);
+
+   if (len && wide_msg)
+   {
+      char utf8_msg[512];
+      if (WideCharToMultiByte(CP_UTF8, 0, wide_msg, -1,
+               utf8_msg, sizeof(utf8_msg), NULL, NULL))
+      {
+         gekkonet_trim_newlines(utf8_msg);
+         RARCH_ERR("%s: %s (0x%lx)\n", context, utf8_msg,
+               (unsigned long)error_code);
+      }
+      else
+         RARCH_ERR("%s: Win32 error 0x%lx\n", context,
+               (unsigned long)error_code);
+      LocalFree(wide_msg);
+   }
+   else
+      RARCH_ERR("%s: Win32 error 0x%lx\n", context,
+            (unsigned long)error_code);
+}
+
+static const char *gekkonet_loaded_module_path(void)
+{
+   return g_gekkonet_api.module_path_utf8[0]
+      ? g_gekkonet_api.module_path_utf8 : NULL;
+}
+
+static const char *gekkonet_api_last_error_string(void)
+{
+   if (!g_gekkonet_api.last_error)
+      return NULL;
+   return g_gekkonet_api.last_error();
+}
+
+static void gekkonet_log_session_create_failure(void)
+{
+   const char *path   = gekkonet_loaded_module_path();
+   const char *reason = gekkonet_api_last_error_string();
+
+   if (path)
+      RARCH_ERR("[GekkoNet] Loaded library: %s\n", path);
+   else if (g_gekkonet_api.load_failed)
+      RARCH_ERR("[GekkoNet] libGekkoNet.dll could not be located or failed to initialise.\n");
+
+   if (reason && reason[0])
+      RARCH_ERR("[GekkoNet] Library error: %s\n", reason);
+
+   RARCH_ERR("[GekkoNet] Ensure the DLL matches this RetroArch build (64-bit) and includes the required exports.\n");
+}
+#else
+static void gekkonet_log_session_create_failure(void) { }
+#endif
 
 static HMODULE gekkonet_try_load_from_directory(const wchar_t *filename)
 {
@@ -192,18 +298,28 @@ static bool gekkonet_load_library(void)
       return false;
 
    g_gekkonet_api.attempted_load = true;
+   g_gekkonet_api.load_failed    = false;
+   g_gekkonet_api.last_error     = NULL;
+   gekkonet_reset_module_path();
 
    module = gekkonet_try_load_from_directory(L"libGekkoNet.dll");
    if (!module)
-      module = LoadLibraryW(L"libGekkoNet.dll");
-
-   if (!module)
    {
-      RARCH_ERR("[GekkoNet] Failed to load libGekkoNet.dll\n");
-      return false;
+      module = LoadLibraryW(L"libGekkoNet.dll");
+      if (!module)
+      {
+         DWORD error = GetLastError();
+         RARCH_ERR("[GekkoNet] Failed to load libGekkoNet.dll\n");
+         if (error)
+            gekkonet_log_win32_error("[GekkoNet] LoadLibraryW", error);
+         g_gekkonet_api.attempted_load = false;
+         g_gekkonet_api.load_failed    = true;
+         return false;
+      }
    }
 
    g_gekkonet_api.module = module;
+   gekkonet_store_module_path(module);
 
 #define GEKKONET_RESOLVE(symbol) \
    do { \
@@ -213,6 +329,10 @@ static bool gekkonet_load_library(void)
          RARCH_ERR("[GekkoNet] Missing symbol: gekko_" #symbol "\n"); \
          FreeLibrary(module); \
          g_gekkonet_api.module = NULL; \
+         g_gekkonet_api.last_error = NULL; \
+         g_gekkonet_api.attempted_load = false; \
+         g_gekkonet_api.load_failed    = true; \
+         gekkonet_reset_module_path(); \
          return false; \
       } \
    } while (0)
@@ -231,11 +351,21 @@ static bool gekkonet_load_library(void)
 
 #undef GEKKONET_RESOLVE
 
+   g_gekkonet_api.last_error = (gekkonet_last_error_proc_t)
+      GetProcAddress(module, "gekko_last_error");
+   if (!g_gekkonet_api.last_error)
+      g_gekkonet_api.last_error = (gekkonet_last_error_proc_t)
+         GetProcAddress(module, "gekko_get_last_error");
+
    return true;
 }
 
 static bool gekkonet_api_create(GekkoSession **session)
 {
+   if (!session)
+      return false;
+   *session = NULL;
+
    if (!gekkonet_load_library())
       return false;
    return g_gekkonet_api.create(session);
@@ -401,13 +531,19 @@ static bool netplay_refresh_serialization(netplay_t *netplay)
 
    size = core_serialize_size_special();
    if (!size)
+   {
+      RARCH_ERR("[Netplay] Core did not report a save state size; rollback netplay requires save-state capable content.\n");
       return false;
+   }
 
    if (size != netplay->state_size)
    {
       uint8_t *new_buf = (uint8_t*)realloc(netplay->state_buffer, size);
       if (!new_buf)
+      {
+         RARCH_ERR("[Netplay] Failed to allocate %zu bytes for the serialization buffer.\n", size);
          return false;
+      }
       netplay->state_buffer = new_buf;
       netplay->state_size   = size;
    }
@@ -730,7 +866,13 @@ static bool netplay_apply_settings(netplay_t *netplay,
       (settings->uints.netplay_local_delay <= 255
          ? settings->uints.netplay_local_delay : 255);
 
-   return netplay_refresh_serialization(netplay);
+   if (!netplay_refresh_serialization(netplay))
+   {
+      RARCH_ERR("[Netplay] Unable to prepare serialization buffers; ensure the current core and content support save states.\n");
+      return false;
+   }
+
+   return true;
 }
 
 static bool netplay_setup_session(netplay_t *netplay,
@@ -742,7 +884,11 @@ static bool netplay_setup_session(netplay_t *netplay,
       return false;
 
    if (!netplay->session && !gekkonet_api_create(&netplay->session))
+   {
+      RARCH_ERR("[GekkoNet] Failed to create a session with libGekkoNet.\n");
+      gekkonet_log_session_create_failure();
       return false;
+   }
 
    if (!netplay_apply_settings(netplay, settings))
       return false;
@@ -761,7 +907,11 @@ static bool netplay_setup_session(netplay_t *netplay,
 
    netplay->adapter = gekkonet_api_default_adapter((unsigned short)port);
    if (!netplay->adapter)
+   {
+      RARCH_ERR("[GekkoNet] Unable to create the default UDP adapter on port %u. Check firewall rules or choose a different port.\n",
+            port);
       return false;
+   }
 
    gekkonet_api_net_adapter_set(netplay->session, netplay->adapter);
    gekkonet_api_start(netplay->session, &cfg);
@@ -769,7 +919,10 @@ static bool netplay_setup_session(netplay_t *netplay,
    netplay->local_handle = gekkonet_api_add_actor(netplay->session,
          LocalPlayer, NULL);
    if (netplay->local_handle < 0)
+   {
+      RARCH_ERR("[GekkoNet] Failed to register the local player with the current session.\n");
       return false;
+   }
 
    return true;
 }
@@ -829,18 +982,54 @@ bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 
    (void)mitm_session;
 
-   if (net_st->data || !netplay_can_start())
+   if (net_st->data)
+   {
+      RARCH_ERR("[Netplay] Unable to start a new session because one is already active. "
+            "Disconnect before hosting or joining again.\n");
       return false;
+   }
+
+   if (!netplay_can_start())
+   {
+      bool auto_enabled = false;
+      bool want_client  = false;
+
+      /* If we were passed a server string (joining or MITM connection)
+       * assume the caller wants the client driver enabled. Otherwise
+       * prefer the server driver. */
+      if (server && !string_is_empty(server))
+         want_client = true;
+      else if (net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT)
+         want_client = true;
+
+      if (want_client)
+         auto_enabled = netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
+      else
+         auto_enabled = netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+
+      if (!auto_enabled || !netplay_can_start())
+      {
+         RARCH_ERR("[Netplay] Netplay driver is disabled; enable it from Settings > Network > Netplay or use the host/client menu entries before starting a session.\n");
+         return false;
+      }
+   }
 
    if (!core_set_default_callbacks(&cbs))
+   {
+      RARCH_ERR("[Netplay] Failed to configure core callbacks required for netplay.\n");
       return false;
+   }
 
    if (!core_set_netplay_callbacks())
+   {
+      RARCH_ERR("[Netplay] Core does not provide netplay callbacks; rollback netplay cannot be initialised.\n");
       return false;
+   }
 
    netplay = netplay_new();
    if (!netplay)
    {
+      RARCH_ERR("[Netplay] Failed to allocate netplay state.\n");
       core_unset_netplay_callbacks();
       return false;
    }
