@@ -489,7 +489,12 @@ static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_VGA;
 #elif defined(HAVE_FPGA)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_FPGA;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
-static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_EXT;
+/* If only dynamic library loading is available, we still need a
+ * statically linked fallback video driver.  The external driver was
+ * removed from this fork, so defaulting to it just produces confusing
+ * errors at runtime.  Fall back to the always-present null driver
+ * instead and let users opt into another driver via configuration. */
+static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_NULL;
 #elif defined(__PSL1GHT__)
 static const enum video_driver_enum VIDEO_DEFAULT_DRIVER = VIDEO_RSX;
 #else
@@ -559,7 +564,9 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_RSOUND;
 #elif defined(HAVE_ROAR)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_ROAR;
 #elif defined(HAVE_DYLIB) && !defined(ANDROID)
-static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_EXT;
+/* Similar to the video driver case above, prefer the built-in null
+ * driver when external audio backends are unavailable on this build. */
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #else
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_NULL;
 #endif
