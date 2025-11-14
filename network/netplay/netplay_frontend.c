@@ -210,6 +210,8 @@ static void netplay_session_status_reset(void)
 #define GEKKONET_DYNAMIC_LOAD 1
 #endif
 
+static const char *gekkonet_api_last_error_string(void);
+
 #if defined(GEKKONET_DYNAMIC_LOAD)
 #define GEKKONET_MAX_PATH_UTF8 (MAX_PATH * 3)
 
