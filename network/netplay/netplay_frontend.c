@@ -404,6 +404,11 @@ static void gekkonet_log_session_create_failure(void)
    RARCH_ERR("[GekkoNet] Ensure the DLL matches this RetroArch build (64-bit) and includes the required exports.\n");
 }
 #else
+static const char *gekkonet_api_last_error_string(void)
+{
+   return NULL;
+}
+
 static void gekkonet_log_session_create_failure(void) { }
 #endif
 
