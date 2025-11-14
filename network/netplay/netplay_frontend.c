@@ -34,6 +34,7 @@
 
 #include "../../configuration.h"
 #include "../../core.h"
+#include "../../paths.h"
 #include "../../runloop.h"
 #include "../../runahead.h"
 #include "../../verbosity.h"
@@ -51,6 +52,9 @@
 
 #include "netplay.h"
 #include "netplay_private.h"
+
+#include <file/file_path.h>
+#include <streams/file_stream.h>
 
 #if defined(_WIN32)
 #if defined(_MSC_VER)
@@ -131,6 +135,48 @@ static bool netplay_udp_port_available(unsigned short port, bool *verified)
    return true;
 }
 #endif
+
+#define NETPLAY_DIAG_PATH_MAX 512
+
+typedef struct netplay_host_diagnostics
+{
+   unsigned requested_port;
+   unsigned resolved_port;
+   bool     port_probe_supported;
+   bool     initial_probe_available;
+   bool     initial_probe_verified;
+   bool     fallback_scan_attempted;
+   bool     fallback_succeeded;
+   unsigned fallback_attempts;
+   bool     fallback_aborted_on_wrap;
+   bool     fallback_aborted_on_unverified;
+   bool     netplay_driver_enabled;
+   bool     netplay_driver_auto_enabled;
+   bool     netplay_driver_request_client;
+   bool     netplay_state_allocated;
+   bool     core_callbacks_ready;
+   bool     netplay_callbacks_ready;
+   bool     serialization_ready;
+   bool     session_created;
+   bool     settings_applied;
+   bool     adapter_acquired;
+   bool     session_started;
+   bool     local_actor_registered;
+   bool     gekkonet_dynamic_load_attempted;
+   bool     gekkonet_module_loaded;
+   bool     gekkonet_symbols_resolved;
+   bool     diagnosis_written;
+   char     gekkonet_module_path[NETPLAY_DIAG_PATH_MAX];
+   char     diagnosis_path[NETPLAY_DIAG_PATH_MAX];
+   char     failure_stage[64];
+   char     failure_reason[128];
+} netplay_host_diagnostics_t;
+
+#define NETPLAY_DIAG_LOG(...) \
+   do { \
+      if (verbosity_is_enabled()) \
+         RARCH_LOG("[GekkoNet][Diag] " __VA_ARGS__); \
+   } while (0)
 
 static void netplay_session_status_set(const char *status,
       unsigned current, unsigned total)
@@ -683,6 +729,267 @@ static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
 
 #endif
 
+static void netplay_host_diag_capture_gekkonet_state(netplay_host_diagnostics_t *diag)
+{
+   if (!diag)
+      return;
+
+#if defined(GEKKONET_DYNAMIC_LOAD)
+   diag->gekkonet_dynamic_load_attempted =
+         g_gekkonet_api.module != NULL || g_gekkonet_api.attempted_load ||
+         g_gekkonet_api.load_failed;
+   diag->gekkonet_module_loaded = g_gekkonet_api.module != NULL;
+   diag->gekkonet_symbols_resolved =
+         g_gekkonet_api.module != NULL && !g_gekkonet_api.load_failed;
+
+   if (g_gekkonet_api.module_path_utf8[0])
+      strlcpy(diag->gekkonet_module_path,
+            g_gekkonet_api.module_path_utf8,
+            sizeof(diag->gekkonet_module_path));
+   else
+      diag->gekkonet_module_path[0] = '\0';
+#else
+   diag->gekkonet_dynamic_load_attempted = false;
+   diag->gekkonet_module_loaded          = true;
+   diag->gekkonet_symbols_resolved       = true;
+   strlcpy(diag->gekkonet_module_path, "builtin",
+         sizeof(diag->gekkonet_module_path));
+#endif
+}
+
+static void netplay_host_diag_write_file(netplay_host_diagnostics_t *diag,
+      const char *last_error)
+{
+   char path[NETPLAY_DIAG_PATH_MAX];
+   char base_dir[NETPLAY_DIAG_PATH_MAX];
+   const char *config_path = NULL;
+   RFILE *file             = NULL;
+
+   if (!diag)
+      return;
+
+   diag->diagnosis_written = false;
+   diag->diagnosis_path[0] = '\0';
+
+   config_path = path_get(RARCH_PATH_CONFIG);
+   path[0]     = '\0';
+   base_dir[0] = '\0';
+
+   if (!string_is_empty(config_path))
+   {
+      size_t len = fill_pathname_basedir(base_dir, config_path,
+            sizeof(base_dir));
+      if (len > 0 && !string_is_empty(base_dir))
+         fill_pathname_join(path, base_dir, "diagnosis.text",
+               sizeof(path));
+   }
+
+   if (string_is_empty(path))
+      strlcpy(path, "diagnosis.text", sizeof(path));
+
+   strlcpy(diag->diagnosis_path, path, sizeof(diag->diagnosis_path));
+
+   file = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!file)
+      return;
+
+   filestream_printf(file,
+         "RetroArch GekkoNet host diagnostics\n");
+   filestream_printf(file,
+         "-----------------------------------\n");
+   filestream_printf(file,
+         "Netplay driver mode            : %s\n",
+         diag->netplay_driver_request_client ? "client" : "server");
+   filestream_printf(file,
+         "Netplay driver enabled         : %s\n",
+         diag->netplay_driver_enabled ? "yes" : "no");
+   filestream_printf(file,
+         "Driver auto-enabled            : %s\n",
+         diag->netplay_driver_auto_enabled ? "yes" : "no");
+   filestream_printf(file,
+         "Netplay state allocation       : %s\n",
+         diag->netplay_state_allocated ? "success" : "failed");
+   filestream_printf(file,
+         "Core callbacks ready           : %s\n",
+         diag->core_callbacks_ready ? "yes" : "no");
+   filestream_printf(file,
+         "Netplay callbacks ready        : %s\n",
+         diag->netplay_callbacks_ready ? "yes" : "no");
+   filestream_printf(file,
+         "Serialization buffer prepared  : %s\n",
+         diag->serialization_ready ? "yes" : "no");
+   filestream_printf(file,
+         "Requested UDP port             : %u\n",
+         diag->requested_port);
+   filestream_printf(file,
+         "Resolved UDP port              : %u%s\n",
+         diag->resolved_port,
+         (diag->fallback_succeeded &&
+          diag->requested_port != diag->resolved_port)
+            ? " (fallback)" : "");
+   filestream_printf(file,
+         "Port probe supported           : %s\n",
+         diag->port_probe_supported ? "yes" : "no");
+   filestream_printf(file,
+         "Initial probe result           : %s%s\n",
+         diag->initial_probe_available ? "available" : "in use",
+         diag->initial_probe_verified ? "" : " (unverified)");
+   if (diag->fallback_scan_attempted)
+   {
+      filestream_printf(file,
+            "Fallback attempts              : %u\n",
+            diag->fallback_attempts);
+      filestream_printf(file,
+            "Fallback result                : %s\n",
+            diag->fallback_succeeded ? "port selected" : "failed");
+      filestream_printf(file,
+            "Fallback aborted on wrap       : %s\n",
+            diag->fallback_aborted_on_wrap ? "yes" : "no");
+      filestream_printf(file,
+            "Fallback aborted on unverified : %s\n",
+            diag->fallback_aborted_on_unverified ? "yes" : "no");
+   }
+   filestream_printf(file,
+         "Stage session create           : %s\n",
+         diag->session_created ? "success" : "not reached");
+   filestream_printf(file,
+         "Stage apply settings           : %s\n",
+         diag->settings_applied ? "success" : "failed");
+   filestream_printf(file,
+         "Stage adapter setup            : %s\n",
+         diag->adapter_acquired ? "success" : "failed");
+   filestream_printf(file,
+         "Stage session start            : %s\n",
+         diag->session_started ? "success" : "not reached");
+   filestream_printf(file,
+         "Stage local actor              : %s\n",
+         diag->local_actor_registered ? "success" : "failed");
+   filestream_printf(file,
+         "libGekkoNet dynamic loader     : %s\n",
+         diag->gekkonet_dynamic_load_attempted ?
+               (diag->gekkonet_module_loaded ? "loaded" : "failed") :
+               "not used");
+   filestream_printf(file,
+         "libGekkoNet symbols resolved   : %s\n",
+         diag->gekkonet_symbols_resolved ? "yes" : "no");
+   if (diag->gekkonet_module_path[0])
+      filestream_printf(file,
+            "libGekkoNet module path        : %s\n",
+            diag->gekkonet_module_path);
+   if (diag->failure_stage[0])
+      filestream_printf(file,
+            "Failure stage                  : %s\n",
+            diag->failure_stage);
+   if (diag->failure_reason[0])
+      filestream_printf(file,
+            "Failure reason                 : %s\n",
+            diag->failure_reason);
+   if (last_error && last_error[0])
+      filestream_printf(file,
+            "libGekkoNet reported           : %s\n",
+            last_error);
+
+   filestream_close(file);
+   diag->diagnosis_written = true;
+}
+
+static void netplay_host_diag_dump(netplay_host_diagnostics_t *diag)
+{
+   const char *last_error = NULL;
+   bool verbose           = false;
+
+   if (!diag)
+      return;
+
+   last_error = gekkonet_api_last_error_string();
+   verbose    = verbosity_is_enabled();
+
+   if (verbose)
+   {
+      RARCH_LOG("[GekkoNet][Diag] ----- Host Session Diagnostics -----\n");
+      RARCH_LOG("[GekkoNet][Diag] Netplay driver mode : %s\n",
+            diag->netplay_driver_request_client ? "client" : "server");
+      RARCH_LOG("[GekkoNet][Diag] Driver enabled      : %s\n",
+            diag->netplay_driver_enabled ? "yes" : "no");
+      RARCH_LOG("[GekkoNet][Diag] Driver auto-enabled : %s\n",
+            diag->netplay_driver_auto_enabled ? "yes" : "no");
+      RARCH_LOG("[GekkoNet][Diag] State allocation    : %s\n",
+            diag->netplay_state_allocated ? "success" : "failed");
+      RARCH_LOG("[GekkoNet][Diag] Core callbacks      : %s\n",
+            diag->core_callbacks_ready ? "ready" : "failed");
+      RARCH_LOG("[GekkoNet][Diag] Netplay callbacks   : %s\n",
+            diag->netplay_callbacks_ready ? "ready" : "failed");
+      RARCH_LOG("[GekkoNet][Diag] Serialization buffer: %s\n",
+            diag->serialization_ready ? "ready" : "unavailable");
+      RARCH_LOG("[GekkoNet][Diag] Requested UDP port  : %u\n",
+            diag->requested_port);
+      RARCH_LOG("[GekkoNet][Diag] Resolved UDP port   : %u%s\n",
+            diag->resolved_port,
+            (diag->fallback_succeeded &&
+             diag->requested_port != diag->resolved_port)
+               ? " (fallback)" : "");
+      RARCH_LOG("[GekkoNet][Diag] Port probe supported: %s\n",
+            diag->port_probe_supported ? "yes" : "no");
+      RARCH_LOG("[GekkoNet][Diag] Initial probe       : %s%s\n",
+            diag->initial_probe_available ? "available" : "in use",
+            diag->initial_probe_verified ? "" : " (unverified)");
+
+      if (diag->fallback_scan_attempted)
+      {
+         RARCH_LOG("[GekkoNet][Diag] Fallback attempts   : %u\n",
+               diag->fallback_attempts);
+         RARCH_LOG("[GekkoNet][Diag] Fallback result     : %s\n",
+               diag->fallback_succeeded ? "port selected" : "failed");
+         if (diag->fallback_aborted_on_wrap)
+            RARCH_LOG("[GekkoNet][Diag] Fallback aborted because search wrapped past port 65535.\n");
+         if (diag->fallback_aborted_on_unverified)
+            RARCH_LOG("[GekkoNet][Diag] Fallback aborted because the platform could not verify candidate ports.\n");
+      }
+
+      RARCH_LOG("[GekkoNet][Diag] Stage session create: %s\n",
+            diag->session_created ? "success" : "not reached");
+      RARCH_LOG("[GekkoNet][Diag] Stage apply settings: %s\n",
+            diag->settings_applied ? "success" : "failed");
+      RARCH_LOG("[GekkoNet][Diag] Stage adapter setup  : %s\n",
+            diag->adapter_acquired ? "success" : "failed");
+      RARCH_LOG("[GekkoNet][Diag] Stage session start  : %s\n",
+            diag->session_started ? "success" : "not reached");
+      RARCH_LOG("[GekkoNet][Diag] Stage local actor    : %s\n",
+            diag->local_actor_registered ? "success" : "failed");
+      RARCH_LOG("[GekkoNet][Diag] libGekkoNet loader   : %s\n",
+            diag->gekkonet_dynamic_load_attempted ?
+               (diag->gekkonet_module_loaded ? "loaded" : "failed") :
+               "not used");
+      RARCH_LOG("[GekkoNet][Diag] libGekkoNet symbols  : %s\n",
+            diag->gekkonet_symbols_resolved ? "resolved" : "missing");
+      if (diag->gekkonet_module_path[0])
+         RARCH_LOG("[GekkoNet][Diag] libGekkoNet module  : %s\n",
+               diag->gekkonet_module_path);
+
+      if (diag->failure_stage[0])
+         RARCH_LOG("[GekkoNet][Diag] Failure stage       : %s\n",
+               diag->failure_stage);
+      if (diag->failure_reason[0])
+         RARCH_LOG("[GekkoNet][Diag] Failure reason      : %s\n",
+               diag->failure_reason);
+      if (last_error && last_error[0])
+         RARCH_LOG("[GekkoNet][Diag] libGekkoNet reported: %s\n",
+               last_error);
+      RARCH_LOG("[GekkoNet][Diag] ------------------------------------\n");
+   }
+
+   netplay_host_diag_write_file(diag, last_error);
+
+   if (!diag->diagnosis_written)
+   {
+      RARCH_WARN("[GekkoNet][Diag] Failed to write diagnostics to %s.\n",
+            diag->diagnosis_path[0] ? diag->diagnosis_path : "diagnosis.text");
+   }
+   else
+      NETPLAY_DIAG_LOG("Diagnostics written to %s.", diag->diagnosis_path);
+}
+
 static void netplay_free(netplay_t *netplay)
 {
    if (!netplay)
@@ -1020,7 +1327,8 @@ static void netplay_post_frame(netplay_t *netplay)
 }
 
 static bool netplay_apply_settings(netplay_t *netplay,
-      const settings_t *settings)
+      const settings_t *settings,
+      netplay_host_diagnostics_t *diag)
 {
    const char *desync_mode = NULL;
 
@@ -1053,17 +1361,21 @@ static bool netplay_apply_settings(netplay_t *netplay,
       return false;
    }
 
+   if (diag)
+      diag->serialization_ready = true;
+
    return true;
 }
 
 static bool netplay_setup_session(netplay_t *netplay,
-      settings_t *settings, unsigned *port_in_out)
+      settings_t *settings, unsigned *port_in_out,
+      netplay_host_diagnostics_t *diag)
 {
    GekkoConfig cfg;
-   unsigned short udp_port          = 0;
-   unsigned       requested_port    = 0;
+   unsigned short udp_port       = 0;
+   unsigned       requested_port = 0;
 
-   if (!netplay || !settings)
+   if (!netplay || !settings || !diag)
       return false;
 
    if (port_in_out && *port_in_out)
@@ -1071,17 +1383,42 @@ static bool netplay_setup_session(netplay_t *netplay,
    else
       requested_port = settings ? settings->uints.netplay_port : 0;
 
-   udp_port = (unsigned short)requested_port;
+   udp_port               = (unsigned short)requested_port;
+   diag->requested_port   = requested_port;
+   diag->resolved_port    = udp_port;
+
+   NETPLAY_DIAG_LOG("Preparing host session using requested UDP port %u.",
+         requested_port);
 
    if (!netplay->session && !gekkonet_api_create(&netplay->session))
    {
       RARCH_ERR("[GekkoNet] Failed to create a session with libGekkoNet.\n");
       gekkonet_log_session_create_failure();
-      return false;
+      netplay_host_diag_capture_gekkonet_state(diag);
+      strlcpy(diag->failure_stage, "session_create",
+            sizeof(diag->failure_stage));
+      strlcpy(diag->failure_reason,
+            "libGekkoNet session handle creation failed",
+            sizeof(diag->failure_reason));
+      goto netplay_host_fail;
    }
 
-   if (!netplay_apply_settings(netplay, settings))
-      return false;
+   diag->session_created = true;
+   netplay_host_diag_capture_gekkonet_state(diag);
+   NETPLAY_DIAG_LOG("Created libGekkoNet session handle.");
+
+   if (!netplay_apply_settings(netplay, settings, diag))
+   {
+      strlcpy(diag->failure_stage, "apply_settings",
+            sizeof(diag->failure_stage));
+      strlcpy(diag->failure_reason,
+            "netplay_apply_settings returned false",
+            sizeof(diag->failure_reason));
+      goto netplay_host_fail;
+   }
+
+   diag->settings_applied = true;
+   NETPLAY_DIAG_LOG("Applied RetroArch netplay settings to session.");
 
    cfg.num_players             = netplay->num_players;
    cfg.max_spectators          = (unsigned char)
@@ -1101,12 +1438,28 @@ static bool netplay_setup_session(netplay_t *netplay,
       bool fallback_port_selected = false;
       const unsigned max_probes   = 16;
 
+      NETPLAY_DIAG_LOG("Probing UDP port %u for availability.", udp_port);
       port_available = netplay_udp_port_available(udp_port, &port_verified);
+
+      diag->initial_probe_available = port_available;
+      diag->initial_probe_verified  = port_verified;
+      if (port_verified)
+         diag->port_probe_supported = true;
+
+      NETPLAY_DIAG_LOG("Probe result for port %u: %s (verified=%s).",
+            udp_port,
+            port_available ? "available" : "in use",
+            port_verified ? "yes" : "no");
 
       if (!port_available && port_verified)
       {
-         unsigned probe_index;
+         unsigned       probe_index;
          unsigned short probe_port = udp_port;
+
+         diag->fallback_scan_attempted = true;
+         NETPLAY_DIAG_LOG(
+               "Initial port %u unavailable. Scanning up to %u fallback ports.",
+               udp_port, max_probes);
 
          for (probe_index = 0; probe_index < max_probes; probe_index++)
          {
@@ -1114,7 +1467,17 @@ static bool netplay_setup_session(netplay_t *netplay,
 
             probe_port = (unsigned short)(probe_port + 1);
             if (!probe_port)
+            {
+               diag->fallback_aborted_on_wrap = true;
+               NETPLAY_DIAG_LOG(
+                     "Stopping fallback scan after wrapping past port 65535.");
                break;
+            }
+
+            diag->fallback_attempts = probe_index + 1;
+            NETPLAY_DIAG_LOG(
+                  "Probing fallback port %u (attempt %u of %u).",
+                  probe_port, probe_index + 1, max_probes);
 
             if (netplay_udp_port_available(probe_port, &candidate_verified) && candidate_verified)
             {
@@ -1122,12 +1485,19 @@ static bool netplay_setup_session(netplay_t *netplay,
                port_verified          = true;
                port_available         = true;
                fallback_port_selected = true;
+               diag->fallback_succeeded = true;
+               diag->port_probe_supported = true;
+               NETPLAY_DIAG_LOG("Selected fallback port %u.", udp_port);
                break;
             }
 
             if (!candidate_verified)
             {
                port_verified = false;
+               diag->fallback_aborted_on_unverified = true;
+               NETPLAY_DIAG_LOG(
+                     "Aborting fallback scan because candidate port %u could not be verified.",
+                     probe_port);
                break;
             }
          }
@@ -1137,7 +1507,12 @@ static bool netplay_setup_session(netplay_t *netplay,
       {
          RARCH_ERR("[GekkoNet] UDP port %u is already in use. Close the conflicting application or configure a different port.\n",
                requested_port);
-         return false;
+         strlcpy(diag->failure_stage, "port_selection",
+               sizeof(diag->failure_stage));
+         strlcpy(diag->failure_reason,
+               "no verified UDP ports available within fallback window",
+               sizeof(diag->failure_reason));
+         goto netplay_host_fail;
       }
 
       if (!port_verified)
@@ -1148,35 +1523,63 @@ static bool netplay_setup_session(netplay_t *netplay,
          RARCH_WARN("[GekkoNet] UDP port %u is already in use. Falling back to port %u. Update forwarding rules or configure a different port if needed.\n",
                requested_port, udp_port);
          configuration_set_uint(settings, settings->uints.netplay_port, udp_port);
+         NETPLAY_DIAG_LOG("Persisted fallback port %u to configuration.", udp_port);
       }
 
       if (port_in_out)
          *port_in_out = udp_port;
-      requested_port = udp_port;
-      netplay->tcp_port     = udp_port;
-      netplay->ext_tcp_port = udp_port;
-
-      netplay->adapter = gekkonet_api_default_adapter(udp_port);
+      requested_port          = udp_port;
+      netplay->tcp_port       = udp_port;
+      netplay->ext_tcp_port   = udp_port;
+      diag->resolved_port     = udp_port;
+      netplay->adapter        = gekkonet_api_default_adapter(udp_port);
    }
+
    if (!netplay->adapter)
    {
       RARCH_ERR("[GekkoNet] Unable to create the default UDP adapter on port %u. Check firewall rules or choose a different port.\n",
             requested_port);
-      return false;
+      strlcpy(diag->failure_stage, "adapter_initialisation",
+            sizeof(diag->failure_stage));
+      strlcpy(diag->failure_reason,
+            "gekkonet_api_default_adapter returned NULL",
+            sizeof(diag->failure_reason));
+      goto netplay_host_fail;
    }
+
+   diag->adapter_acquired = true;
+   NETPLAY_DIAG_LOG("Initialised libGekkoNet UDP adapter on port %u.",
+         requested_port);
 
    gekkonet_api_net_adapter_set(netplay->session, netplay->adapter);
    gekkonet_api_start(netplay->session, &cfg);
+
+   diag->session_started = true;
+   NETPLAY_DIAG_LOG("Started libGekkoNet session thread.");
 
    netplay->local_handle = gekkonet_api_add_actor(netplay->session,
          LocalPlayer, NULL);
    if (netplay->local_handle < 0)
    {
       RARCH_ERR("[GekkoNet] Failed to register the local player with the current session.\n");
-      return false;
+      strlcpy(diag->failure_stage, "register_local_actor",
+            sizeof(diag->failure_stage));
+      strlcpy(diag->failure_reason,
+            "gekkonet_api_add_actor returned a negative handle",
+            sizeof(diag->failure_reason));
+      goto netplay_host_fail;
    }
 
+   diag->local_actor_registered = true;
+   NETPLAY_DIAG_LOG("Registered local player handle %d with libGekkoNet.",
+         netplay->local_handle);
+
+   netplay_host_diag_capture_gekkonet_state(diag);
    return true;
+
+netplay_host_fail:
+   netplay_host_diag_capture_gekkonet_state(diag);
+   return false;
 }
 
 static netplay_t *netplay_new(void)
@@ -1205,14 +1608,15 @@ static void netplay_reset_state(netplay_t *netplay)
 }
 
 static bool netplay_begin_session(netplay_t *netplay,
-      const char *server, unsigned port)
+      const char *server, unsigned port,
+      netplay_host_diagnostics_t *diag)
 {
    settings_t *settings = config_get_ptr();
 
    if (!settings || !netplay)
       return false;
 
-   if (!netplay_setup_session(netplay, settings, &port))
+   if (!netplay_setup_session(netplay, settings, &port, diag))
       return false;
 
    (void)server;
@@ -1228,80 +1632,133 @@ static bool netplay_can_start(void)
 
 bool init_netplay(const char *server, unsigned port, const char *mitm_session)
 {
-   netplay_t *netplay;
+   netplay_t *netplay               = NULL;
    struct retro_callbacks cbs;
-   net_driver_state_t *net_st  = &networking_driver_st;
+   net_driver_state_t *net_st       = &networking_driver_st;
+   netplay_host_diagnostics_t diag;
+   bool callbacks_set               = false;
+   bool success                     = false;
+   bool want_client                 = false;
 
    (void)mitm_session;
 
+   memset(&diag, 0, sizeof(diag));
+
+   if (server && !string_is_empty(server))
+      want_client = true;
+   else if (net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT)
+      want_client = true;
+
+   diag.netplay_driver_request_client = want_client;
+   diag.netplay_driver_enabled        = netplay_can_start();
+
    if (net_st->data)
    {
-      RARCH_ERR("[Netplay] Unable to start a new session because one is already active. "
-            "Disconnect before hosting or joining again.\n");
-      return false;
+      RARCH_ERR("[Netplay] Unable to start a new session because one is already active. Disconnect before hosting or joining again.\n");
+      strlcpy(diag.failure_stage, "preflight_active_session",
+            sizeof(diag.failure_stage));
+      strlcpy(diag.failure_reason,
+            "net_st->data already set",
+            sizeof(diag.failure_reason));
+      goto cleanup;
    }
 
-   if (!netplay_can_start())
+   if (!diag.netplay_driver_enabled)
    {
       bool auto_enabled = false;
-      bool want_client  = false;
-
-      /* If we were passed a server string (joining or MITM connection)
-       * assume the caller wants the client driver enabled. Otherwise
-       * prefer the server driver. */
-      if (server && !string_is_empty(server))
-         want_client = true;
-      else if (net_st->flags & NET_DRIVER_ST_FLAG_NETPLAY_IS_CLIENT)
-         want_client = true;
 
       if (want_client)
          auto_enabled = netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_CLIENT, NULL);
       else
          auto_enabled = netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
 
-      if (!auto_enabled || !netplay_can_start())
+      diag.netplay_driver_auto_enabled = auto_enabled;
+      diag.netplay_driver_enabled      = netplay_can_start();
+
+      if (!auto_enabled || !diag.netplay_driver_enabled)
       {
          RARCH_ERR("[Netplay] Netplay driver is disabled; enable it from Settings > Network > Netplay or use the host/client menu entries before starting a session.\n");
-         return false;
+         strlcpy(diag.failure_stage, "enable_driver",
+               sizeof(diag.failure_stage));
+         strlcpy(diag.failure_reason,
+               "failed to enable requested netplay driver",
+               sizeof(diag.failure_reason));
+         goto cleanup;
       }
    }
 
    if (!core_set_default_callbacks(&cbs))
    {
       RARCH_ERR("[Netplay] Failed to configure core callbacks required for netplay.\n");
-      return false;
+      strlcpy(diag.failure_stage, "core_callbacks",
+            sizeof(diag.failure_stage));
+      strlcpy(diag.failure_reason,
+            "core_set_default_callbacks returned false",
+            sizeof(diag.failure_reason));
+      goto cleanup;
    }
+   diag.core_callbacks_ready = true;
 
    if (!core_set_netplay_callbacks())
    {
       RARCH_ERR("[Netplay] Core does not provide netplay callbacks; rollback netplay cannot be initialised.\n");
-      return false;
+      strlcpy(diag.failure_stage, "netplay_callbacks",
+            sizeof(diag.failure_stage));
+      strlcpy(diag.failure_reason,
+            "core_set_netplay_callbacks returned false",
+            sizeof(diag.failure_reason));
+      goto cleanup;
    }
+   diag.netplay_callbacks_ready = true;
+   callbacks_set = true;
 
    netplay = netplay_new();
    if (!netplay)
    {
       RARCH_ERR("[Netplay] Failed to allocate netplay state.\n");
-      core_unset_netplay_callbacks();
-      return false;
+      strlcpy(diag.failure_stage, "allocate_state",
+            sizeof(diag.failure_stage));
+      strlcpy(diag.failure_reason,
+            "netplay_new returned NULL",
+            sizeof(diag.failure_reason));
+      goto cleanup;
    }
+   diag.netplay_state_allocated = true;
 
-   netplay->cbs = cbs;
-   netplay->running = true;
+   netplay->cbs       = cbs;
+   netplay->running   = true;
    netplay->spectator = false;
 
-   if (!netplay_begin_session(netplay, server, port))
+   if (!netplay_begin_session(netplay, server, port, &diag))
    {
-      netplay_free(netplay);
-      core_unset_netplay_callbacks();
-      return false;
+      if (!diag.failure_stage[0])
+         strlcpy(diag.failure_stage, "session_init",
+               sizeof(diag.failure_stage));
+      if (!diag.failure_reason[0])
+         strlcpy(diag.failure_reason,
+               "netplay_begin_session returned false",
+               sizeof(diag.failure_reason));
+      goto cleanup;
    }
 
    net_st->data        = netplay;
    net_st->latest_ping = -1;
    net_st->flags      &= ~NET_DRIVER_ST_FLAG_NETPLAY_CLIENT_DEFERRED;
 
-   return true;
+   success = true;
+
+cleanup:
+   netplay_host_diag_dump(&diag);
+
+   if (!success)
+   {
+      if (netplay)
+         netplay_free(netplay);
+      if (callbacks_set)
+         core_unset_netplay_callbacks();
+   }
+
+   return success;
 }
 
 bool init_netplay_deferred(const char *server, unsigned port,
