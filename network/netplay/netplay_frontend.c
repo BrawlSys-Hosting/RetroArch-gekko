@@ -578,6 +578,12 @@ static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
 
 #else
 
+static void gekkonet_log_session_create_failure(void)
+{
+   RARCH_ERR("[GekkoNet] Failed to initialise a session. "
+         "Ensure libGekkoNet is available and built for this platform.\n");
+}
+
 static bool gekkonet_api_create(GekkoSession **session)
 {
    return gekko_create(session);
