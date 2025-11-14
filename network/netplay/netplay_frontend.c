@@ -56,10 +56,16 @@
 #include <file/file_path.h>
 #include <streams/file_stream.h>
 
-#if defined(_WIN32)
-#if defined(_MSC_VER)
+#if defined(_WIN32) && !defined(GEKKONET_FORCE_STATIC_LINK)
+/* Use the runtime loader on Windows builds unless the build system
+ * explicitly requests a static link. Suppress __declspec import/export
+ * annotations so we can bind symbols at runtime. */
+#ifndef GEKKONET_STATIC
 #define GEKKONET_STATIC
 #endif
+#endif
+
+#if defined(_WIN32)
 #include "../../gekkonet/windows/include/gekkonet.h"
 #elif defined(__APPLE__)
 #include "../../gekkonet/mac/include/gekkonet.h"
@@ -67,7 +73,7 @@
 #include "../../gekkonet/linux/include/gekkonet.h"
 #endif
 
-#if defined(_WIN32) && defined(_MSC_VER)
+#if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -208,7 +214,10 @@ static void netplay_session_status_reset(void)
    netplay_session_status_set(fallback, 0, 0);
 }
 
-#if defined(_WIN32) && defined(_MSC_VER)
+#if defined(_WIN32) && !defined(GEKKONET_FORCE_STATIC_LINK)
+/* Enable the libGekkoNet dynamic loader for all Windows toolchains.
+ * Toolchains that prefer static linking can opt out by defining
+ * GEKKONET_FORCE_STATIC_LINK. */
 #define GEKKONET_DYNAMIC_LOAD 1
 #endif
 
@@ -785,11 +794,44 @@ static void netplay_host_diag_capture_gekkonet_state(netplay_host_diagnostics_t 
 #endif
 }
 
+static void netplay_host_diag_describe_loader(
+      const netplay_host_diagnostics_t *diag,
+      char *buffer, size_t size)
+{
+   const char *status = "not used";
+
+   if (!buffer || size == 0)
+      return;
+
+   buffer[0] = '\0';
+
+   if (!diag)
+   {
+      strlcpy(buffer, "unknown", size);
+      return;
+   }
+
+   if (diag->gekkonet_dynamic_load_attempted)
+      status = diag->gekkonet_module_loaded ? "loaded" : "failed";
+   else if (!string_is_empty(diag->gekkonet_module_path))
+   {
+      if (strcmp(diag->gekkonet_module_path, "builtin") == 0)
+         status = "builtin (static link)";
+      else
+         status = diag->gekkonet_module_path;
+   }
+   else if (diag->gekkonet_module_loaded && diag->gekkonet_symbols_resolved)
+      status = "builtin (static link)";
+
+   strlcpy(buffer, status, size);
+}
+
 static void netplay_host_diag_write_file(netplay_host_diagnostics_t *diag,
       const char *last_error)
 {
    char path[NETPLAY_DIAG_PATH_MAX];
    char base_dir[NETPLAY_DIAG_PATH_MAX];
+   char loader_status[64];
    const char *config_path = NULL;
    RFILE *file             = NULL;
 
@@ -826,6 +868,8 @@ static void netplay_host_diag_write_file(netplay_host_diagnostics_t *diag,
          "RetroArch GekkoNet host diagnostics\n");
    filestream_printf(file,
          "-----------------------------------\n");
+   netplay_host_diag_describe_loader(diag, loader_status,
+         sizeof(loader_status));
    filestream_printf(file,
          "Netplay driver mode            : %s\n",
          diag->netplay_driver_request_client ? "client" : "server");
@@ -895,9 +939,7 @@ static void netplay_host_diag_write_file(netplay_host_diagnostics_t *diag,
          diag->local_actor_registered ? "success" : "failed");
    filestream_printf(file,
          "libGekkoNet dynamic loader     : %s\n",
-         diag->gekkonet_dynamic_load_attempted ?
-               (diag->gekkonet_module_loaded ? "loaded" : "failed") :
-               "not used");
+         loader_status[0] ? loader_status : "not used");
    filestream_printf(file,
          "libGekkoNet symbols resolved   : %s\n",
          diag->gekkonet_symbols_resolved ? "yes" : "no");
@@ -926,12 +968,15 @@ static void netplay_host_diag_dump(netplay_host_diagnostics_t *diag)
 {
    const char *last_error = NULL;
    bool verbose           = false;
+   char loader_status[64];
 
    if (!diag)
       return;
 
    last_error = netplay_diag_last_error_string();
    verbose    = verbosity_is_enabled();
+   netplay_host_diag_describe_loader(diag, loader_status,
+         sizeof(loader_status));
 
    if (verbose)
    {
@@ -986,9 +1031,7 @@ static void netplay_host_diag_dump(netplay_host_diagnostics_t *diag)
       RARCH_LOG("[GekkoNet][Diag] Stage local actor    : %s\n",
             diag->local_actor_registered ? "success" : "failed");
       RARCH_LOG("[GekkoNet][Diag] libGekkoNet loader   : %s\n",
-            diag->gekkonet_dynamic_load_attempted ?
-               (diag->gekkonet_module_loaded ? "loaded" : "failed") :
-               "not used");
+            loader_status[0] ? loader_status : "not used");
       RARCH_LOG("[GekkoNet][Diag] libGekkoNet symbols  : %s\n",
             diag->gekkonet_symbols_resolved ? "resolved" : "missing");
       if (diag->gekkonet_module_path[0])
