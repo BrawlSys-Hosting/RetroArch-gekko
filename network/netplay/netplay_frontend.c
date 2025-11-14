@@ -383,7 +383,7 @@ static const char *gekkonet_loaded_module_path(void)
       ? g_gekkonet_api.module_path_utf8 : NULL;
 }
 
-static const char *gekkonet_api_last_error_string(void)
+static const char *netplay_diag_last_error_string(void)
 {
    if (!g_gekkonet_api.last_error)
       return NULL;
@@ -393,7 +393,7 @@ static const char *gekkonet_api_last_error_string(void)
 static void gekkonet_log_session_create_failure(void)
 {
    const char *path   = gekkonet_loaded_module_path();
-   const char *reason = gekkonet_api_last_error_string();
+   const char *reason = netplay_diag_last_error_string();
 
    if (path)
       RARCH_ERR("[GekkoNet] Loaded library: %s\n", path);
@@ -406,7 +406,7 @@ static void gekkonet_log_session_create_failure(void)
    RARCH_ERR("[GekkoNet] Ensure the DLL matches this RetroArch build (64-bit) and includes the required exports.\n");
 }
 #else
-static const char *gekkonet_api_last_error_string(void)
+static const char *netplay_diag_last_error_string(void)
 {
    return NULL;
 }
@@ -909,7 +909,7 @@ static void netplay_host_diag_dump(netplay_host_diagnostics_t *diag)
    if (!diag)
       return;
 
-   last_error = gekkonet_api_last_error_string();
+   last_error = netplay_diag_last_error_string();
    verbose    = verbosity_is_enabled();
 
    if (verbose)
