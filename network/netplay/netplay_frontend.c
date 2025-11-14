@@ -742,6 +742,21 @@ static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
 
 #endif
 
+#if defined(GEKKONET_DYNAMIC_LOAD)
+static const char *netplay_diag_last_error_string(void)
+{
+   if (!g_gekkonet_api.last_error)
+      return NULL;
+
+   return g_gekkonet_api.last_error();
+}
+#else
+static const char *netplay_diag_last_error_string(void)
+{
+   return NULL;
+}
+#endif
+
 static void netplay_host_diag_capture_gekkonet_state(netplay_host_diagnostics_t *diag)
 {
    if (!diag)
