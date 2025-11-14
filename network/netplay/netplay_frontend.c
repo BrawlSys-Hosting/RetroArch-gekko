@@ -212,6 +212,8 @@ static void netplay_session_status_reset(void)
 #define GEKKONET_DYNAMIC_LOAD 1
 #endif
 
+static const char *gekkonet_api_last_error_string(void);
+
 #if defined(GEKKONET_DYNAMIC_LOAD)
 #define GEKKONET_MAX_PATH_UTF8 (MAX_PATH * 3)
 
@@ -399,6 +401,11 @@ static void gekkonet_log_session_create_failure(void)
    RARCH_ERR("[GekkoNet] Ensure the DLL matches this RetroArch build (64-bit) and includes the required exports.\n");
 }
 #else
+static const char *netplay_diag_last_error_string(void)
+{
+   return NULL;
+}
+
 static void gekkonet_log_session_create_failure(void) { }
 #endif
 
