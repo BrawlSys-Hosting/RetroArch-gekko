@@ -98,6 +98,8 @@ static const unsigned netplay_button_map[NETPLAY_BUTTON_COUNT] = {
 
 static net_driver_state_t networking_driver_st;
 
+static const char *netplay_diag_last_error_string(void);
+
 #ifdef HAVE_NETWORKING
 static bool netplay_udp_port_available(unsigned short port, bool *verified)
 {
