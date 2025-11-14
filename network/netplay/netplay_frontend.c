@@ -41,6 +41,10 @@
 #include "../../audio/audio_driver.h"
 #include "../../gfx/video_driver.h"
 
+#ifdef HAVE_NETWORKING
+#include <net/net_socket.h>
+#endif
+
 #ifdef HAVE_GFX_WIDGETS
 #include "../../gfx/gfx_widgets.h"
 #endif
@@ -89,6 +93,44 @@ static const unsigned netplay_button_map[NETPLAY_BUTTON_COUNT] = {
 };
 
 static net_driver_state_t networking_driver_st;
+
+#ifdef HAVE_NETWORKING
+static bool netplay_udp_port_available(unsigned short port, bool *verified)
+{
+   struct addrinfo *addr = NULL;
+   int fd                = -1;
+   bool available        = true;
+
+   if (verified)
+      *verified = false;
+
+   fd = socket_init((void**)&addr, port, NULL, SOCKET_TYPE_DATAGRAM, AF_INET);
+   if (fd < 0 || !addr)
+      goto cleanup;
+
+   if (verified)
+      *verified = true;
+
+   available = socket_bind(fd, addr);
+
+cleanup:
+   if (fd >= 0)
+      socket_close(fd);
+
+   if (addr)
+      freeaddrinfo_retro(addr);
+
+   return available;
+}
+#else
+static bool netplay_udp_port_available(unsigned short port, bool *verified)
+{
+   (void)port;
+   if (verified)
+      *verified = false;
+   return true;
+}
+#endif
 
 static void netplay_session_status_set(const char *status,
       unsigned current, unsigned total)
@@ -578,6 +620,12 @@ static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
 
 #else
 
+static void gekkonet_log_session_create_failure(void)
+{
+   RARCH_ERR("[GekkoNet] Failed to initialise a session. "
+         "Ensure libGekkoNet is available and built for this platform.\n");
+}
+
 static bool gekkonet_api_create(GekkoSession **session)
 {
    return gekko_create(session);
@@ -1009,12 +1057,21 @@ static bool netplay_apply_settings(netplay_t *netplay,
 }
 
 static bool netplay_setup_session(netplay_t *netplay,
-      const settings_t *settings, unsigned port)
+      settings_t *settings, unsigned *port_in_out)
 {
    GekkoConfig cfg;
+   unsigned short udp_port          = 0;
+   unsigned       requested_port    = 0;
 
-   if (!netplay)
+   if (!netplay || !settings)
       return false;
+
+   if (port_in_out && *port_in_out)
+      requested_port = *port_in_out;
+   else
+      requested_port = settings ? settings->uints.netplay_port : 0;
+
+   udp_port = (unsigned short)requested_port;
 
    if (!netplay->session && !gekkonet_api_create(&netplay->session))
    {
@@ -1038,11 +1095,73 @@ static bool netplay_setup_session(netplay_t *netplay,
    cfg.post_sync_joining       = true;
    cfg.desync_detection        = true;
 
-   netplay->adapter = gekkonet_api_default_adapter((unsigned short)port);
+   {
+      bool port_verified          = false;
+      bool port_available         = false;
+      bool fallback_port_selected = false;
+      const unsigned max_probes   = 16;
+
+      port_available = netplay_udp_port_available(udp_port, &port_verified);
+
+      if (!port_available && port_verified)
+      {
+         unsigned probe_index;
+         unsigned short probe_port = udp_port;
+
+         for (probe_index = 0; probe_index < max_probes; probe_index++)
+         {
+            bool candidate_verified = false;
+
+            probe_port = (unsigned short)(probe_port + 1);
+            if (!probe_port)
+               break;
+
+            if (netplay_udp_port_available(probe_port, &candidate_verified) && candidate_verified)
+            {
+               udp_port               = probe_port;
+               port_verified          = true;
+               port_available         = true;
+               fallback_port_selected = true;
+               break;
+            }
+
+            if (!candidate_verified)
+            {
+               port_verified = false;
+               break;
+            }
+         }
+      }
+
+      if (!port_available && port_verified)
+      {
+         RARCH_ERR("[GekkoNet] UDP port %u is already in use. Close the conflicting application or configure a different port.\n",
+               requested_port);
+         return false;
+      }
+
+      if (!port_verified)
+         RARCH_WARN("[GekkoNet] Unable to verify availability of UDP port %u. Continuing without a preflight check.\n",
+               requested_port);
+      else if (fallback_port_selected)
+      {
+         RARCH_WARN("[GekkoNet] UDP port %u is already in use. Falling back to port %u. Update forwarding rules or configure a different port if needed.\n",
+               requested_port, udp_port);
+         configuration_set_uint(settings, settings->uints.netplay_port, udp_port);
+      }
+
+      if (port_in_out)
+         *port_in_out = udp_port;
+      requested_port = udp_port;
+      netplay->tcp_port     = udp_port;
+      netplay->ext_tcp_port = udp_port;
+
+      netplay->adapter = gekkonet_api_default_adapter(udp_port);
+   }
    if (!netplay->adapter)
    {
       RARCH_ERR("[GekkoNet] Unable to create the default UDP adapter on port %u. Check firewall rules or choose a different port.\n",
-            port);
+            requested_port);
       return false;
    }
 
@@ -1093,7 +1212,7 @@ static bool netplay_begin_session(netplay_t *netplay,
    if (!settings || !netplay)
       return false;
 
-   if (!netplay_setup_session(netplay, settings, port))
+   if (!netplay_setup_session(netplay, settings, &port))
       return false;
 
    (void)server;
