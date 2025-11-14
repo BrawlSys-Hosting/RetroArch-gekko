@@ -1057,7 +1057,7 @@ static bool netplay_apply_settings(netplay_t *netplay,
 }
 
 static bool netplay_setup_session(netplay_t *netplay,
-      const settings_t *settings, unsigned port)
+      settings_t *settings, unsigned port)
 {
    GekkoConfig cfg;
 
@@ -1087,10 +1087,45 @@ static bool netplay_setup_session(netplay_t *netplay,
    cfg.desync_detection        = true;
 
    {
-      bool port_verified = false;
-      unsigned short udp_port = (unsigned short)port;
+      bool port_verified          = false;
+      bool port_available         = false;
+      bool fallback_port_selected = false;
+      unsigned short udp_port     = (unsigned short)port;
+      const unsigned max_probes   = 16;
 
-      if (!netplay_udp_port_available(udp_port, &port_verified) && port_verified)
+      port_available = netplay_udp_port_available(udp_port, &port_verified);
+
+      if (!port_available && port_verified)
+      {
+         unsigned probe_index;
+         unsigned short probe_port = udp_port;
+
+         for (probe_index = 0; probe_index < max_probes; probe_index++)
+         {
+            bool candidate_verified = false;
+
+            probe_port = (unsigned short)(probe_port + 1);
+            if (!probe_port)
+               break;
+
+            if (netplay_udp_port_available(probe_port, &candidate_verified) && candidate_verified)
+            {
+               udp_port              = probe_port;
+               port_verified         = true;
+               port_available        = true;
+               fallback_port_selected = true;
+               break;
+            }
+
+            if (!candidate_verified)
+            {
+               port_verified = false;
+               break;
+            }
+         }
+      }
+
+      if (!port_available && port_verified)
       {
          RARCH_ERR("[GekkoNet] UDP port %u is already in use. Close the conflicting application or configure a different port.\n",
                port);
@@ -1100,6 +1135,13 @@ static bool netplay_setup_session(netplay_t *netplay,
       if (!port_verified)
          RARCH_WARN("[GekkoNet] Unable to verify availability of UDP port %u. Continuing without a preflight check.\n",
                port);
+      else if (fallback_port_selected)
+      {
+         RARCH_WARN("[GekkoNet] UDP port %u is already in use. Falling back to port %u. Update forwarding rules or configure a different port if needed.\n",
+               port, udp_port);
+         configuration_set_uint(settings, settings->uints.netplay_port, udp_port);
+         port = udp_port;
+      }
 
       netplay->adapter = gekkonet_api_default_adapter(udp_port);
    }
