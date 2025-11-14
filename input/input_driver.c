@@ -4702,6 +4702,40 @@ bool video_driver_init_input(
                input_driver_st.current_driver,
                settings->arrays.input_joypad_driver)))
    {
+      unsigned i;
+      const char *failed_ident = settings->arrays.input_driver;
+
+      if (input_driver_st.current_driver &&
+            input_driver_st.current_driver->ident)
+         failed_ident = input_driver_st.current_driver->ident;
+
+      RARCH_WARN("[Input] Failed to initialize driver \"%s\"."
+         " Searching for a fallback.\n", failed_ident);
+
+      for (i = 0; input_drivers[i]; i++)
+      {
+         input_driver_t *candidate = (input_driver_t*)input_drivers[i];
+
+         if (candidate == input_driver_st.current_driver)
+            continue;
+
+         new_data = input_driver_init_wrap(candidate,
+               settings->arrays.input_joypad_driver);
+
+         if (!new_data)
+            continue;
+
+         input_driver_st.current_driver = candidate;
+         input_driver_st.current_data   = new_data;
+         configuration_set_string(settings,
+               settings->arrays.input_driver,
+               candidate->ident);
+
+         RARCH_LOG("[Input] Using fallback driver \"%s\".\n",
+               candidate->ident);
+         return true;
+      }
+
       RARCH_ERR("[Video] Cannot initialize input driver. Exiting...\n");
       return false;
    }
