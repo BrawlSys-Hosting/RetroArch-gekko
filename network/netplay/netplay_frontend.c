@@ -385,13 +385,6 @@ static const char *gekkonet_loaded_module_path(void)
       ? g_gekkonet_api.module_path_utf8 : NULL;
 }
 
-static const char *netplay_diag_last_error_string(void)
-{
-   if (!g_gekkonet_api.last_error)
-      return NULL;
-   return g_gekkonet_api.last_error();
-}
-
 static void gekkonet_log_session_create_failure(void)
 {
    const char *path   = gekkonet_loaded_module_path();
@@ -415,6 +408,17 @@ static const char *netplay_diag_last_error_string(void)
 
 static void gekkonet_log_session_create_failure(void) { }
 #endif
+
+static const char *netplay_diag_last_error_string(void)
+{
+#if defined(GEKKONET_DYNAMIC_LOAD)
+   if (!g_gekkonet_api.last_error)
+      return NULL;
+   return g_gekkonet_api.last_error();
+#else
+   return NULL;
+#endif
+}
 
 static bool gekkonet_build_module_path(const wchar_t *filename,
       wchar_t *buffer, size_t capacity)
