@@ -98,7 +98,7 @@ static const unsigned netplay_button_map[NETPLAY_BUTTON_COUNT] = {
 
 static net_driver_state_t networking_driver_st;
 
-const char *netplay_diag_last_error_string(void);
+static const char *netplay_diag_last_error_string(void);
 
 #ifdef HAVE_NETWORKING
 static bool netplay_udp_port_available(unsigned short port, bool *verified)
@@ -385,7 +385,7 @@ static const char *gekkonet_loaded_module_path(void)
       ? g_gekkonet_api.module_path_utf8 : NULL;
 }
 
-const char *netplay_diag_last_error_string(void)
+static const char *netplay_diag_last_error_string(void)
 {
    if (!g_gekkonet_api.last_error)
       return NULL;
@@ -408,7 +408,7 @@ static void gekkonet_log_session_create_failure(void)
    RARCH_ERR("[GekkoNet] Ensure the DLL matches this RetroArch build (64-bit) and includes the required exports.\n");
 }
 #else
-const char *netplay_diag_last_error_string(void)
+static const char *netplay_diag_last_error_string(void)
 {
    return NULL;
 }
