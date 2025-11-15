@@ -548,8 +548,9 @@ static bool gekkonet_load_library(void)
 
 #define GEKKONET_RESOLVE(symbol) \
    do { \
-      g_gekkonet_api.symbol = (gekkonet_##symbol##_proc_t)GetProcAddress(module, "gekko_" #symbol); \
-      if (!g_gekkonet_api.symbol) \
+      FARPROC sym = GetProcAddress(module, "gekko_" #symbol); \
+      gekkonet_##symbol##_proc_t func_tmp = NULL; \
+      if (!sym) \
       { \
          RARCH_ERR("[GekkoNet] Missing symbol: gekko_" #symbol "\n"); \
          FreeLibrary(module); \
@@ -560,6 +561,8 @@ static bool gekkonet_load_library(void)
          gekkonet_reset_module_path(); \
          return false; \
       } \
+      memcpy(&func_tmp, &sym, sizeof(func_tmp)); \
+      g_gekkonet_api.symbol = func_tmp; \
    } while (0)
 
    GEKKONET_RESOLVE(create);
@@ -576,11 +579,25 @@ static bool gekkonet_load_library(void)
 
 #undef GEKKONET_RESOLVE
 
-   g_gekkonet_api.last_error = (gekkonet_last_error_proc_t)
-      GetProcAddress(module, "gekko_last_error");
+   {
+      FARPROC sym = GetProcAddress(module, "gekko_last_error");
+      if (sym)
+      {
+         gekkonet_last_error_proc_t func_tmp = NULL;
+         memcpy(&func_tmp, &sym, sizeof(func_tmp));
+         g_gekkonet_api.last_error = func_tmp;
+      }
+   }
    if (!g_gekkonet_api.last_error)
-      g_gekkonet_api.last_error = (gekkonet_last_error_proc_t)
-         GetProcAddress(module, "gekko_get_last_error");
+   {
+      FARPROC sym = GetProcAddress(module, "gekko_get_last_error");
+      if (sym)
+      {
+         gekkonet_last_error_proc_t func_tmp = NULL;
+         memcpy(&func_tmp, &sym, sizeof(func_tmp));
+         g_gekkonet_api.last_error = func_tmp;
+      }
+   }
 
    return true;
 }
@@ -697,11 +714,13 @@ static bool gekkonet_load_library(void)
 
 #define GEKKONET_RESOLVE(symbol) \
    do { \
+      const char *sym_error; \
+      void *sym; \
+      gekkonet_##symbol##_proc_t func_tmp = NULL; \
       dlerror(); \
-      g_gekkonet_api.symbol = (gekkonet_##symbol##_proc_t) \
-         dlsym(module, "gekko_" #symbol); \
-      const char *sym_error = dlerror(); \
-      if (!g_gekkonet_api.symbol || sym_error) { \
+      sym = dlsym(module, "gekko_" #symbol); \
+      sym_error = dlerror(); \
+      if (!sym || sym_error) { \
          RARCH_ERR("[GekkoNet] Missing symbol: gekko_" #symbol "\n"); \
          if (sym_error) \
             RARCH_ERR("[GekkoNet] dlsym error: %s\n", sym_error); \
@@ -713,6 +732,8 @@ static bool gekkonet_load_library(void)
          gekkonet_reset_module_path(); \
          return false; \
       } \
+      memcpy(&func_tmp, &sym, sizeof(func_tmp)); \
+      g_gekkonet_api.symbol = func_tmp; \
    } while (0)
 
    GEKKONET_RESOLVE(create);
@@ -730,13 +751,30 @@ static bool gekkonet_load_library(void)
 #undef GEKKONET_RESOLVE
 
    dlerror();
-   g_gekkonet_api.last_error = (gekkonet_last_error_proc_t)
-      dlsym(module, "gekko_last_error");
+   {
+      const char *sym_error;
+      void *sym = dlsym(module, "gekko_last_error");
+      sym_error = dlerror();
+      if (sym && !sym_error)
+      {
+         gekkonet_last_error_proc_t func_tmp = NULL;
+         memcpy(&func_tmp, &sym, sizeof(func_tmp));
+         g_gekkonet_api.last_error = func_tmp;
+      }
+   }
    if (!g_gekkonet_api.last_error)
    {
+      const char *sym_error;
+      void *sym;
       dlerror();
-      g_gekkonet_api.last_error = (gekkonet_last_error_proc_t)
-         dlsym(module, "gekko_get_last_error");
+      sym = dlsym(module, "gekko_get_last_error");
+      sym_error = dlerror();
+      if (sym && !sym_error)
+      {
+         gekkonet_last_error_proc_t func_tmp = NULL;
+         memcpy(&func_tmp, &sym, sizeof(func_tmp));
+         g_gekkonet_api.last_error = func_tmp;
+      }
       dlerror();
    }
 
