@@ -1665,6 +1665,9 @@ static bool netplay_apply_settings(netplay_t *netplay,
    netplay->num_players = (unsigned char)
       (settings->uints.input_max_users <= 255
          ? settings->uints.input_max_users : 255);
+
+   if (!netplay->num_players)
+      netplay->num_players = 1;
    netplay->input_prediction_window = (unsigned char)
       (settings->uints.netplay_prediction_window <= 255
          ? settings->uints.netplay_prediction_window : 255);
