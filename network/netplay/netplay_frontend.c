@@ -176,14 +176,18 @@ typedef struct netplay_host_diagnostics
    bool     adapter_acquired;
    bool     session_started;
    bool     local_actor_registered;
+   bool     remote_address_resolved;
+   bool     remote_actor_registered;
    bool     gekkonet_dynamic_load_attempted;
    bool     gekkonet_module_loaded;
    bool     gekkonet_symbols_resolved;
    bool     diagnosis_written;
    char     gekkonet_module_path[NETPLAY_DIAG_PATH_MAX];
    char     diagnosis_path[NETPLAY_DIAG_PATH_MAX];
+   char     remote_actor_endpoint[NETPLAY_DIAG_PATH_MAX];
    char     failure_stage[64];
    char     failure_reason[128];
+   unsigned remote_actor_port;
 } netplay_host_diagnostics_t;
 
 #define NETPLAY_DIAG_LOG(...) \
@@ -1150,6 +1154,18 @@ static void netplay_host_diag_write_file(netplay_host_diagnostics_t *diag,
    filestream_printf(file,
          "Stage local actor              : %s\n",
          diag->local_actor_registered ? "success" : "failed");
+   if (diag->netplay_driver_request_client)
+   {
+      filestream_printf(file,
+            "Remote endpoint               : %s\n",
+            diag->remote_actor_endpoint[0]
+               ? diag->remote_actor_endpoint
+               : "not resolved");
+      filestream_printf(file,
+            "Stage remote actor            : %s\n",
+            diag->remote_actor_registered ? "success" :
+            (diag->remote_address_resolved ? "failed" : "not reached"));
+   }
    filestream_printf(file,
          "libGekkoNet dynamic loader     : %s\n",
          loader_status[0] ? loader_status : "not used");
@@ -1243,6 +1259,16 @@ static void netplay_host_diag_dump(netplay_host_diagnostics_t *diag)
             diag->session_started ? "success" : "not reached");
       RARCH_LOG("[GekkoNet][Diag] Stage local actor    : %s\n",
             diag->local_actor_registered ? "success" : "failed");
+      if (diag->netplay_driver_request_client)
+      {
+         RARCH_LOG("[GekkoNet][Diag] Remote endpoint     : %s\n",
+               diag->remote_actor_endpoint[0]
+                  ? diag->remote_actor_endpoint
+                  : "not resolved");
+         RARCH_LOG("[GekkoNet][Diag] Stage remote actor  : %s\n",
+               diag->remote_actor_registered ? "success" :
+               (diag->remote_address_resolved ? "failed" : "not reached"));
+      }
       RARCH_LOG("[GekkoNet][Diag] libGekkoNet loader   : %s\n",
             loader_status[0] ? loader_status : "not used");
       RARCH_LOG("[GekkoNet][Diag] libGekkoNet symbols  : %s\n",
@@ -1286,6 +1312,7 @@ static void netplay_free(netplay_t *netplay)
 
    free(netplay->state_buffer);
    free(netplay->authoritative_input);
+   free(netplay->remote_actors);
    free(netplay);
 }
 
@@ -1639,6 +1666,20 @@ static bool netplay_apply_settings(netplay_t *netplay,
       (settings->uints.netplay_local_delay <= 255
          ? settings->uints.netplay_local_delay : 255);
 
+   if (!netplay_prepare_remote_actor_pool(netplay))
+   {
+      RARCH_ERR("[Netplay] Unable to prepare remote actor table.\n");
+      if (diag)
+      {
+         strlcpy(diag->failure_stage, "allocate_remote_actors",
+               sizeof(diag->failure_stage));
+         strlcpy(diag->failure_reason,
+               "netplay_prepare_remote_actor_pool returned false",
+               sizeof(diag->failure_reason));
+      }
+      return false;
+   }
+
    if (!netplay_refresh_serialization(netplay))
    {
       RARCH_ERR("[Netplay] Unable to prepare serialization buffers; ensure the current core and content support save states.\n");
@@ -1653,14 +1694,31 @@ static bool netplay_apply_settings(netplay_t *netplay,
 
 static bool netplay_setup_session(netplay_t *netplay,
       settings_t *settings, unsigned *port_in_out,
+      const char *server,
       netplay_host_diagnostics_t *diag)
 {
    GekkoConfig cfg;
    unsigned short udp_port       = 0;
    unsigned       requested_port = 0;
+   net_driver_state_t *net_st    = &networking_driver_st;
+   const char *client_server     = server;
+   unsigned remote_port_hint     = 0;
+   bool want_client              = diag && diag->netplay_driver_request_client;
 
    if (!netplay || !settings || !diag)
       return false;
+
+   if (string_is_empty(client_server) &&
+         net_st->server_address_deferred[0])
+      client_server = net_st->server_address_deferred;
+
+   remote_port_hint = net_st->server_port_deferred;
+   if (!remote_port_hint)
+      remote_port_hint = settings->uints.netplay_port;
+   if (!remote_port_hint && port_in_out && *port_in_out)
+      remote_port_hint = *port_in_out;
+   if (!remote_port_hint)
+      remote_port_hint = RARCH_DEFAULT_PORT;
 
    if (port_in_out && *port_in_out)
       requested_port = *port_in_out;
@@ -1703,6 +1761,8 @@ static bool netplay_setup_session(netplay_t *netplay,
 
    diag->settings_applied = true;
    NETPLAY_DIAG_LOG("Applied RetroArch netplay settings to session.");
+
+   netplay_remote_actor_pool_reset(netplay);
 
    cfg.num_players             = netplay->num_players;
    cfg.max_spectators          = (unsigned char)
@@ -1836,11 +1896,6 @@ static bool netplay_setup_session(netplay_t *netplay,
          requested_port);
 
    gekkonet_api_net_adapter_set(netplay->session, netplay->adapter);
-   gekkonet_api_start(netplay->session, &cfg);
-
-   diag->session_started = true;
-   NETPLAY_DIAG_LOG("Started libGekkoNet session thread.");
-
    netplay->local_handle = gekkonet_api_add_actor(netplay->session,
          LocalPlayer, NULL);
    if (netplay->local_handle < 0)
@@ -1857,6 +1912,26 @@ static bool netplay_setup_session(netplay_t *netplay,
    diag->local_actor_registered = true;
    NETPLAY_DIAG_LOG("Registered local player handle %d with libGekkoNet.",
          netplay->local_handle);
+
+   if (want_client)
+   {
+      netplay_session_status_set("Resolving remote host", 0, 0);
+      if (!netplay_register_remote_actor_from_string(netplay,
+               client_server, remote_port_hint, diag,
+               "register_remote_actor"))
+         goto netplay_host_fail;
+
+      if (diag->remote_actor_registered)
+      {
+         NETPLAY_DIAG_LOG("Registered remote peer %s.",
+               diag->remote_actor_endpoint);
+      }
+   }
+
+   gekkonet_api_start(netplay->session, &cfg);
+
+   diag->session_started = true;
+   NETPLAY_DIAG_LOG("Started libGekkoNet session thread.");
 
    netplay_host_diag_capture_gekkonet_state(diag);
    return true;
@@ -1900,10 +1975,9 @@ static bool netplay_begin_session(netplay_t *netplay,
    if (!settings || !netplay)
       return false;
 
-   if (!netplay_setup_session(netplay, settings, &port, diag))
+   if (!netplay_setup_session(netplay, settings, &port, server, diag))
       return false;
 
-   (void)server;
    netplay_reset_state(netplay);
    return true;
 }
@@ -2196,6 +2270,296 @@ bool netplay_driver_ctl(enum rarch_netplay_ctl_state state, void *data)
    }
 
    return false;
+}
+
+bool netplay_register_remote_peer(const char *server, unsigned port)
+{
+   netplay_t *netplay = networking_driver_st.data;
+
+   if (!netplay || !netplay->session)
+      return false;
+
+   return netplay_register_remote_actor_from_string(netplay,
+         server, port, NULL, NULL);
+}
+
+static void netplay_remote_actor_release(netplay_remote_actor_t *actor)
+{
+   if (!actor)
+      return;
+#ifdef HAVE_NETWORKING
+   memset(&actor->addr, 0, sizeof(actor->addr));
+   actor->addr_len = 0;
+#endif
+   actor->addr_valid  = false;
+   actor->registered  = false;
+   actor->handle      = -1;
+   actor->endpoint[0] = '\0';
+}
+
+static void netplay_remote_actor_pool_reset(netplay_t *netplay)
+{
+   size_t i;
+
+   if (!netplay || !netplay->remote_actors)
+      return;
+
+   for (i = 0; i < netplay->remote_actor_count; i++)
+      netplay_remote_actor_release(&netplay->remote_actors[i]);
+}
+
+static bool netplay_prepare_remote_actor_pool(netplay_t *netplay)
+{
+   size_t required = 0;
+
+   if (!netplay)
+      return false;
+
+   if (netplay->num_players > 0)
+      required = (size_t)(netplay->num_players - 1);
+
+   if (required == netplay->remote_actor_count)
+   {
+      netplay_remote_actor_pool_reset(netplay);
+      return true;
+   }
+
+   free(netplay->remote_actors);
+   netplay->remote_actors      = NULL;
+   netplay->remote_actor_count = 0;
+
+   if (!required)
+      return true;
+
+   netplay->remote_actors = (netplay_remote_actor_t*)calloc(required,
+         sizeof(*netplay->remote_actors));
+   if (!netplay->remote_actors)
+      return false;
+
+   netplay->remote_actor_count = required;
+   netplay_remote_actor_pool_reset(netplay);
+   return true;
+}
+
+static netplay_remote_actor_t *netplay_remote_actor_reserve(netplay_t *netplay)
+{
+   size_t i;
+
+   if (!netplay || !netplay->remote_actors || !netplay->remote_actor_count)
+      return NULL;
+
+   for (i = 0; i < netplay->remote_actor_count; i++)
+   {
+      netplay_remote_actor_t *actor = &netplay->remote_actors[i];
+      if (!actor->addr_valid && !actor->registered)
+      {
+         netplay_remote_actor_release(actor);
+         return actor;
+      }
+   }
+
+   return NULL;
+}
+
+static bool netplay_remote_actor_assign_endpoint(netplay_remote_actor_t *actor,
+      const char *address, unsigned port)
+{
+#ifdef HAVE_NETWORKING
+   struct addrinfo hints;
+   struct addrinfo *result = NULL;
+   struct addrinfo *entry  = NULL;
+   char port_buf[16];
+   bool success = false;
+
+   if (!actor || string_is_empty(address) || !port)
+      return false;
+
+   memset(&hints, 0, sizeof(hints));
+   hints.ai_family   = AF_UNSPEC;
+   hints.ai_socktype = SOCK_DGRAM;
+   hints.ai_protocol = IPPROTO_UDP;
+
+   snprintf(port_buf, sizeof(port_buf), "%u", port);
+
+   if (getaddrinfo_retro(address, port_buf, &hints, &result) != 0)
+      return false;
+
+   for (entry = result; entry; entry = entry->ai_next)
+   {
+      if (entry->ai_addr && entry->ai_addrlen <= sizeof(actor->addr))
+      {
+         memcpy(&actor->addr, entry->ai_addr, entry->ai_addrlen);
+         actor->addr_len = (socklen_t)entry->ai_addrlen;
+         success = true;
+         break;
+      }
+   }
+
+   freeaddrinfo_retro(result);
+
+   if (!success)
+      return false;
+
+   actor->addr_valid = true;
+   actor->registered = false;
+   actor->handle     = -1;
+   snprintf(actor->endpoint, sizeof(actor->endpoint), "%s:%u",
+         address, port);
+   return true;
+#else
+   (void)actor;
+   (void)address;
+   (void)port;
+   return false;
+#endif
+}
+
+static bool netplay_remote_actor_commit(netplay_t *netplay,
+      netplay_remote_actor_t *actor)
+{
+   GekkoNetAddress addr;
+
+   if (!netplay || !netplay->session || !actor || !actor->addr_valid)
+      return false;
+
+   addr.data = &actor->addr;
+   addr.size = (unsigned)actor->addr_len;
+
+   actor->handle = gekkonet_api_add_actor(netplay->session,
+         RemotePlayer, &addr);
+   if (actor->handle < 0)
+      return false;
+
+   actor->registered = true;
+   return true;
+}
+
+static bool netplay_register_remote_actor_from_parts(netplay_t *netplay,
+      const char *address, unsigned port,
+      netplay_host_diagnostics_t *diag, const char *failure_stage)
+{
+   netplay_remote_actor_t *actor = NULL;
+   char status_buf[128];
+
+   if (!netplay || string_is_empty(address) || !port)
+      return false;
+
+   actor = netplay_remote_actor_reserve(netplay);
+   if (!actor)
+   {
+      RARCH_ERR("[GekkoNet] No free remote actor slots available. Increase input_max_users to add more peers.\n");
+      if (diag && failure_stage && !diag->failure_stage[0])
+         strlcpy(diag->failure_stage, failure_stage,
+               sizeof(diag->failure_stage));
+      if (diag && !diag->failure_reason[0])
+         strlcpy(diag->failure_reason,
+               "no free remote actor slots",
+               sizeof(diag->failure_reason));
+      netplay_session_status_set("No free remote slots", 0, 0);
+      return false;
+   }
+
+   if (!netplay_remote_actor_assign_endpoint(actor, address, port))
+   {
+      RARCH_ERR("[GekkoNet] Failed to resolve remote peer %s:%u.\n",
+            address, port);
+      if (diag && failure_stage && !diag->failure_stage[0])
+         strlcpy(diag->failure_stage, failure_stage,
+               sizeof(diag->failure_stage));
+      if (diag && !diag->failure_reason[0])
+         strlcpy(diag->failure_reason,
+               "failed to resolve remote address",
+               sizeof(diag->failure_reason));
+      netplay_session_status_set("Remote host resolution failed", 0, 0);
+      netplay_remote_actor_release(actor);
+      return false;
+   }
+
+   if (diag)
+   {
+      diag->remote_address_resolved = true;
+      strlcpy(diag->remote_actor_endpoint, actor->endpoint,
+            sizeof(diag->remote_actor_endpoint));
+      diag->remote_actor_port = port;
+   }
+
+   if (!netplay_remote_actor_commit(netplay, actor))
+   {
+      RARCH_ERR("[GekkoNet] Failed to register remote peer %s with libGekkoNet.\n",
+            actor->endpoint);
+      if (diag && failure_stage && !diag->failure_stage[0])
+         strlcpy(diag->failure_stage, failure_stage,
+               sizeof(diag->failure_stage));
+      if (diag && !diag->failure_reason[0])
+         strlcpy(diag->failure_reason,
+               "gekkonet_api_add_actor returned a negative handle",
+               sizeof(diag->failure_reason));
+      netplay_session_status_set("Remote registration failed", 0, 0);
+      netplay_remote_actor_release(actor);
+      return false;
+   }
+
+   if (diag)
+      diag->remote_actor_registered = true;
+
+   snprintf(status_buf, sizeof(status_buf),
+         "Registered remote peer %s", actor->endpoint);
+   netplay_session_status_set(status_buf, 0, 0);
+   return true;
+}
+
+static bool netplay_register_remote_actor_from_string(netplay_t *netplay,
+      const char *server, unsigned fallback_port,
+      netplay_host_diagnostics_t *diag, const char *failure_stage)
+{
+   char address[256];
+   char session[32];
+   unsigned remote_port = fallback_port;
+
+   if (string_is_empty(server))
+   {
+      if (diag && failure_stage && !diag->failure_stage[0])
+         strlcpy(diag->failure_stage, failure_stage,
+               sizeof(diag->failure_stage));
+      if (diag && !diag->failure_reason[0])
+         strlcpy(diag->failure_reason,
+               "server address not provided",
+               sizeof(diag->failure_reason));
+      netplay_session_status_set("Remote host not specified", 0, 0);
+      return false;
+   }
+
+   address[0] = '\0';
+   session[0] = '\0';
+
+   if (!netplay_decode_hostname(server, address, &remote_port,
+            session, sizeof(address)))
+   {
+      RARCH_ERR("[GekkoNet] Unable to decode remote hostname '%s'.\n",
+            server);
+      if (diag && failure_stage && !diag->failure_stage[0])
+         strlcpy(diag->failure_stage, failure_stage,
+               sizeof(diag->failure_stage));
+      if (diag && !diag->failure_reason[0])
+         strlcpy(diag->failure_reason,
+               "netplay_decode_hostname returned false",
+               sizeof(diag->failure_reason));
+      netplay_session_status_set("Remote host decode failed", 0, 0);
+      return false;
+   }
+
+   if (string_is_empty(address))
+      strlcpy(address, server, sizeof(address));
+
+   if (!remote_port)
+      remote_port = fallback_port;
+   if (!remote_port && netplay)
+      remote_port = netplay->tcp_port;
+   if (!remote_port)
+      remote_port = RARCH_DEFAULT_PORT;
+
+   return netplay_register_remote_actor_from_parts(netplay,
+         address, remote_port, diag, failure_stage);
 }
 
 bool netplay_reinit_serialization(void)
