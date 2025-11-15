@@ -630,6 +630,23 @@ if [ "$HAVE_MENU" != 'no' ]; then
    fi
 fi
 
+if [ "$OS" = 'Linux' ] && [ "$HAVE_MENU" != 'no' ]; then
+   LINUX_VIDEO_BACKENDS='OPENGL OPENGL_CORE OPENGL1 OPENGLES OPENGLES3 VULKAN SDL SDL2 PLAIN_DRM KMS WAYLAND'
+   HAVE_LINUX_VIDEO_BACKEND='no'
+
+   for backend in $LINUX_VIDEO_BACKENDS; do
+      backend_state="$(eval "printf %s \"\$HAVE_${backend}\"")"
+      if [ "$backend_state" = 'yes' ]; then
+         HAVE_LINUX_VIDEO_BACKEND='yes'
+         break
+      fi
+   done
+
+   if [ "$HAVE_LINUX_VIDEO_BACKEND" != 'yes' ]; then
+      die 1 'Error: No Linux video backends enabled. Install development headers for OpenGL, SDL2, Vulkan, KMS/libdrm or Wayland, or re-run configure with --disable-menu for a headless build.'
+   fi
+fi
+
 if [ "$HAVE_STEAM" = 'yes' ]; then
    add_opt CORE_INFO_CACHE no
    add_opt ONLINE_UPDATER no
