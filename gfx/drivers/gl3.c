@@ -3923,7 +3923,6 @@ static bool gl3_frame(void *data, const void *frame,
 
    if (gl->chain.active)
    {
-      unsigned i;
       video_shader_ctx_params_t params;
       struct video_tex_info feedback_info;
 
