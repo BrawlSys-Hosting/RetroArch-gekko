@@ -277,6 +277,9 @@ typedef struct gekkonet_dynamic_api
 } gekkonet_dynamic_api_t;
 
 static gekkonet_dynamic_api_t g_gekkonet_api;
+static const char *gekkonet_loaded_module_path(void);
+
+#endif
 
 #if defined(GEKKONET_DYNAMIC_LOAD)
 
