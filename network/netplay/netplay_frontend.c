@@ -1713,11 +1713,24 @@ static bool netplay_setup_session(netplay_t *netplay,
    const char *client_server     = server;
    unsigned remote_port_hint     = 0;
    bool want_client              = diag && diag->netplay_driver_request_client;
+   bool retried_local_actor      = false;
 
    if (!netplay || !settings || !diag)
       return false;
 
+retry_host_setup:
    memset(&cfg, 0, sizeof(cfg));
+
+   /* Always start with a fresh libGekkoNet session handle so that any
+    * lingering actors from a previous attempt cannot interfere with
+    * registration of the local player. */
+   if (netplay->session)
+   {
+      NETPLAY_DIAG_LOG("Resetting stale libGekkoNet session handle before creating a new one.");
+      gekkonet_api_destroy(netplay->session);
+      netplay->session = NULL;
+      netplay->local_handle = -1;
+   }
 
    if (string_is_empty(client_server) &&
          net_st->server_address_deferred[0])
@@ -1925,6 +1938,27 @@ static bool netplay_setup_session(netplay_t *netplay,
          strlcpy(diag->failure_reason,
                "gekkonet_api_add_actor returned a negative handle",
                sizeof(diag->failure_reason));
+
+      if (!retried_local_actor)
+      {
+         NETPLAY_DIAG_LOG(
+               "Recreating libGekkoNet session after local actor registration failed.");
+
+         retried_local_actor = true;
+         gekkonet_api_destroy(netplay->session);
+         netplay->session       = NULL;
+         netplay->adapter       = NULL;
+         netplay->local_handle  = -1;
+         diag->failure_stage[0] = '\0';
+         diag->failure_reason[0] = '\0';
+         diag->session_created  = false;
+         diag->settings_applied = false;
+         diag->adapter_acquired = false;
+         diag->local_actor_registered = false;
+         diag->session_started  = false;
+         goto retry_host_setup;
+      }
+
       goto netplay_host_fail;
    }
 
