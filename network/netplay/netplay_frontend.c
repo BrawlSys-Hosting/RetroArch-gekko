@@ -1719,6 +1719,17 @@ static bool netplay_setup_session(netplay_t *netplay,
 
    memset(&cfg, 0, sizeof(cfg));
 
+   /* Always start with a fresh libGekkoNet session handle so that any
+    * lingering actors from a previous attempt cannot interfere with
+    * registration of the local player. */
+   if (netplay->session)
+   {
+      NETPLAY_DIAG_LOG("Resetting stale libGekkoNet session handle before creating a new one.");
+      gekkonet_api_destroy(netplay->session);
+      netplay->session = NULL;
+      netplay->local_handle = -1;
+   }
+
    if (string_is_empty(client_server) &&
          net_st->server_address_deferred[0])
       client_server = net_st->server_address_deferred;
