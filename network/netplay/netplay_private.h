@@ -37,6 +37,10 @@ typedef struct GekkoNetAdapter GekkoNetAdapter;
 
 #include <libretro.h>
 
+#ifdef HAVE_NETWORKING
+#include <net/net_compat.h>
+#endif
+
 #include <streams/trans_stream.h>
 
 #include "../../retroarch_types.h"
@@ -368,6 +372,18 @@ typedef struct netplay_address
       ::ffff:a.b.c.d format. */
    uint8_t addr[16];
 } netplay_address_t;
+
+typedef struct netplay_remote_actor
+{
+#ifdef HAVE_NETWORKING
+   struct sockaddr_storage addr;
+   socklen_t addr_len;
+#endif
+   bool addr_valid;
+   bool registered;
+   int  handle;
+   char endpoint[NETPLAY_HOST_LONGSTR_LEN];
+} netplay_remote_actor_t;
 
 enum netplay_connection_flags
 {
@@ -705,6 +721,8 @@ struct netplay
    GekkoSession    *session;
    GekkoNetAdapter *adapter;
    int              local_handle;
+   netplay_remote_actor_t *remote_actors;
+   size_t           remote_actor_count;
    unsigned char    num_players;
    unsigned char    input_prediction_window;
    unsigned char    spectator_delay;
