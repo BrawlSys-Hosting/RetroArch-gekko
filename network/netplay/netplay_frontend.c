@@ -21,6 +21,12 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#if defined(__linux__)
+#include <unistd.h>
+#include <limits.h>
+#include <dlfcn.h>
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
 #endif
@@ -214,34 +220,45 @@ static void netplay_session_status_reset(void)
    netplay_session_status_set(fallback, 0, 0);
 }
 
-#if defined(_WIN32) && !defined(GEKKONET_FORCE_STATIC_LINK)
-/* Enable the libGekkoNet dynamic loader for all Windows toolchains.
- * Toolchains that prefer static linking can opt out by defining
- * GEKKONET_FORCE_STATIC_LINK. */
+#if (defined(_WIN32) || defined(__linux__)) && !defined(GEKKONET_FORCE_STATIC_LINK)
+/* Enable the libGekkoNet dynamic loader on platforms where runtime
+ * symbol resolution is supported. Toolchains that prefer static linking
+ * can opt out by defining GEKKONET_FORCE_STATIC_LINK. */
 #define GEKKONET_DYNAMIC_LOAD 1
 #endif
 
 static const char *gekkonet_api_last_error_string(void);
 
 #if defined(GEKKONET_DYNAMIC_LOAD)
+#if defined(_WIN32)
 #define GEKKONET_MAX_PATH_UTF8 (MAX_PATH * 3)
+#define GEKKONET_CALL __cdecl
+typedef HMODULE gekkonet_module_handle_t;
+#else
+#ifndef PATH_MAX
+#define PATH_MAX 4096
+#endif
+#define GEKKONET_MAX_PATH_UTF8 PATH_MAX
+#define GEKKONET_CALL
+typedef void *gekkonet_module_handle_t;
+#endif
 
-typedef bool (__cdecl *gekkonet_create_proc_t)(GekkoSession **session);
-typedef bool (__cdecl *gekkonet_destroy_proc_t)(GekkoSession *session);
-typedef void (__cdecl *gekkonet_start_proc_t)(GekkoSession *session, GekkoConfig *config);
-typedef void (__cdecl *gekkonet_net_adapter_set_proc_t)(GekkoSession *session, GekkoNetAdapter *adapter);
-typedef int  (__cdecl *gekkonet_add_actor_proc_t)(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr);
-typedef void (__cdecl *gekkonet_add_local_input_proc_t)(GekkoSession *session, int player, void *input);
-typedef GekkoGameEvent **(__cdecl *gekkonet_update_session_proc_t)(GekkoSession *session, int *count);
-typedef GekkoSessionEvent **(__cdecl *gekkonet_session_events_proc_t)(GekkoSession *session, int *count);
-typedef void (__cdecl *gekkonet_network_stats_proc_t)(GekkoSession *session, int player, GekkoNetworkStats *stats);
-typedef void (__cdecl *gekkonet_network_poll_proc_t)(GekkoSession *session);
-typedef GekkoNetAdapter *(__cdecl *gekkonet_default_adapter_proc_t)(unsigned short port);
-typedef const char *(__cdecl *gekkonet_last_error_proc_t)(void);
+typedef bool (GEKKONET_CALL *gekkonet_create_proc_t)(GekkoSession **session);
+typedef bool (GEKKONET_CALL *gekkonet_destroy_proc_t)(GekkoSession *session);
+typedef void (GEKKONET_CALL *gekkonet_start_proc_t)(GekkoSession *session, GekkoConfig *config);
+typedef void (GEKKONET_CALL *gekkonet_net_adapter_set_proc_t)(GekkoSession *session, GekkoNetAdapter *adapter);
+typedef int  (GEKKONET_CALL *gekkonet_add_actor_proc_t)(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr);
+typedef void (GEKKONET_CALL *gekkonet_add_local_input_proc_t)(GekkoSession *session, int player, void *input);
+typedef GekkoGameEvent **(GEKKONET_CALL *gekkonet_update_session_proc_t)(GekkoSession *session, int *count);
+typedef GekkoSessionEvent **(GEKKONET_CALL *gekkonet_session_events_proc_t)(GekkoSession *session, int *count);
+typedef void (GEKKONET_CALL *gekkonet_network_stats_proc_t)(GekkoSession *session, int player, GekkoNetworkStats *stats);
+typedef void (GEKKONET_CALL *gekkonet_network_poll_proc_t)(GekkoSession *session);
+typedef GekkoNetAdapter *(GEKKONET_CALL *gekkonet_default_adapter_proc_t)(unsigned short port);
+typedef const char *(GEKKONET_CALL *gekkonet_last_error_proc_t)(void);
 
 typedef struct gekkonet_dynamic_api
 {
-   HMODULE                           module;
+   gekkonet_module_handle_t           module;
    bool                              attempted_load;
    bool                              load_failed;
    char                              module_path_utf8[GEKKONET_MAX_PATH_UTF8];
@@ -262,10 +279,13 @@ typedef struct gekkonet_dynamic_api
 static gekkonet_dynamic_api_t g_gekkonet_api;
 
 #if defined(GEKKONET_DYNAMIC_LOAD)
+
 static void gekkonet_reset_module_path(void)
 {
    g_gekkonet_api.module_path_utf8[0] = '\0';
 }
+
+#if defined(_WIN32)
 
 static bool gekkonet_wide_to_utf8(const wchar_t *src, char *dst, size_t dst_size)
 {
@@ -386,47 +406,6 @@ static void gekkonet_log_load_context(const wchar_t *path,
                "the file is present and readable.\n", path_utf8);
       }
    }
-}
-
-static const char *gekkonet_loaded_module_path(void)
-{
-   return g_gekkonet_api.module_path_utf8[0]
-      ? g_gekkonet_api.module_path_utf8 : NULL;
-}
-
-static void gekkonet_log_session_create_failure(void)
-{
-   const char *path   = gekkonet_loaded_module_path();
-   const char *reason = netplay_diag_last_error_string();
-
-   if (path)
-      RARCH_ERR("[GekkoNet] Loaded library: %s\n", path);
-   else if (g_gekkonet_api.load_failed)
-      RARCH_ERR("[GekkoNet] libGekkoNet.dll could not be located or failed to initialise.\n");
-
-   if (reason && reason[0])
-      RARCH_ERR("[GekkoNet] Library error: %s\n", reason);
-
-   RARCH_ERR("[GekkoNet] Ensure the DLL matches this RetroArch build (64-bit) and includes the required exports.\n");
-}
-#else
-static const char *netplay_diag_last_error_string(void)
-{
-   return NULL;
-}
-
-static void gekkonet_log_session_create_failure(void) { }
-#endif
-
-static const char *netplay_diag_last_error_string(void)
-{
-#if defined(GEKKONET_DYNAMIC_LOAD)
-   if (!g_gekkonet_api.last_error)
-      return NULL;
-   return g_gekkonet_api.last_error();
-#else
-   return NULL;
-#endif
 }
 
 static bool gekkonet_build_module_path(const wchar_t *filename,
@@ -603,6 +582,198 @@ static bool gekkonet_load_library(void)
    return true;
 }
 
+static void gekkonet_log_session_create_failure(void)
+{
+   const char *path   = gekkonet_loaded_module_path();
+   const char *reason = netplay_diag_last_error_string();
+
+   if (path)
+      RARCH_ERR("[GekkoNet] Loaded library: %s\n", path);
+   else if (g_gekkonet_api.load_failed)
+      RARCH_ERR("[GekkoNet] libGekkoNet.dll could not be located or failed to initialise.\n");
+
+   if (reason && reason[0])
+      RARCH_ERR("[GekkoNet] Library error: %s\n", reason);
+
+   RARCH_ERR("[GekkoNet] Ensure the DLL matches this RetroArch build (64-bit) and includes the required exports.\n");
+}
+
+#elif defined(__linux__)
+
+static bool gekkonet_build_module_path(const char *filename,
+      char *buffer, size_t capacity)
+{
+   ssize_t len;
+   char   *last_sep;
+   size_t  base_len;
+   size_t  filename_len;
+
+   if (!filename || !buffer || capacity == 0)
+      return false;
+
+   len = readlink("/proc/self/exe", buffer, capacity - 1);
+   if (len <= 0 || (size_t)len >= capacity - 1)
+      return false;
+
+   buffer[len] = '\0';
+
+   last_sep = strrchr(buffer, '/');
+   if (!last_sep)
+      return false;
+
+   base_len     = (size_t)(last_sep - buffer + 1);
+   filename_len = strlen(filename);
+
+   if (base_len + filename_len >= capacity)
+      return false;
+
+   memcpy(last_sep + 1, filename, filename_len + 1);
+   return true;
+}
+
+static bool gekkonet_load_library(void)
+{
+   void       *module;
+   char        module_path[GEKKONET_MAX_PATH_UTF8];
+   const char *selected_path = NULL;
+
+   if (g_gekkonet_api.module)
+      return true;
+
+   if (g_gekkonet_api.attempted_load)
+      return false;
+
+   g_gekkonet_api.attempted_load = true;
+   g_gekkonet_api.load_failed    = false;
+   g_gekkonet_api.last_error     = NULL;
+   gekkonet_reset_module_path();
+
+   module = NULL;
+   module_path[0] = '\0';
+
+   if (gekkonet_build_module_path("libGekkoNet.so", module_path,
+         sizeof(module_path)))
+   {
+      dlerror();
+      module = dlopen(module_path, RTLD_NOW | RTLD_LOCAL);
+      if (module)
+         selected_path = module_path;
+      else
+      {
+         const char *error = dlerror();
+         if (error)
+            RARCH_ERR("[GekkoNet] Failed to load %s: %s\n", module_path, error);
+      }
+   }
+
+   if (!module)
+   {
+      dlerror();
+      module = dlopen("libGekkoNet.so", RTLD_NOW | RTLD_LOCAL);
+      if (module)
+         selected_path = "libGekkoNet.so";
+      else
+      {
+         const char *error = dlerror();
+         RARCH_ERR("[GekkoNet] Failed to load libGekkoNet.so\n");
+         if (error)
+            RARCH_ERR("[GekkoNet] dlopen error: %s\n", error);
+         g_gekkonet_api.attempted_load = false;
+         g_gekkonet_api.load_failed    = true;
+         return false;
+      }
+   }
+
+   g_gekkonet_api.module = module;
+
+   if (selected_path)
+      strlcpy(g_gekkonet_api.module_path_utf8, selected_path,
+            sizeof(g_gekkonet_api.module_path_utf8));
+   else
+      gekkonet_reset_module_path();
+
+#define GEKKONET_RESOLVE(symbol) \
+   do { \
+      dlerror(); \
+      g_gekkonet_api.symbol = (gekkonet_##symbol##_proc_t) \
+         dlsym(module, "gekko_" #symbol); \
+      const char *sym_error = dlerror(); \
+      if (!g_gekkonet_api.symbol || sym_error) { \
+         RARCH_ERR("[GekkoNet] Missing symbol: gekko_" #symbol "\n"); \
+         if (sym_error) \
+            RARCH_ERR("[GekkoNet] dlsym error: %s\n", sym_error); \
+         dlclose(module); \
+         g_gekkonet_api.module = NULL; \
+         g_gekkonet_api.last_error = NULL; \
+         g_gekkonet_api.attempted_load = false; \
+         g_gekkonet_api.load_failed    = true; \
+         gekkonet_reset_module_path(); \
+         return false; \
+      } \
+   } while (0)
+
+   GEKKONET_RESOLVE(create);
+   GEKKONET_RESOLVE(destroy);
+   GEKKONET_RESOLVE(start);
+   GEKKONET_RESOLVE(net_adapter_set);
+   GEKKONET_RESOLVE(add_actor);
+   GEKKONET_RESOLVE(add_local_input);
+   GEKKONET_RESOLVE(update_session);
+   GEKKONET_RESOLVE(session_events);
+   GEKKONET_RESOLVE(network_stats);
+   GEKKONET_RESOLVE(network_poll);
+   GEKKONET_RESOLVE(default_adapter);
+
+#undef GEKKONET_RESOLVE
+
+   dlerror();
+   g_gekkonet_api.last_error = (gekkonet_last_error_proc_t)
+      dlsym(module, "gekko_last_error");
+   if (!g_gekkonet_api.last_error)
+   {
+      dlerror();
+      g_gekkonet_api.last_error = (gekkonet_last_error_proc_t)
+         dlsym(module, "gekko_get_last_error");
+      dlerror();
+   }
+
+   return true;
+}
+
+static void gekkonet_log_session_create_failure(void)
+{
+   const char *path   = gekkonet_loaded_module_path();
+   const char *reason = netplay_diag_last_error_string();
+
+   if (path)
+      RARCH_ERR("[GekkoNet] Loaded library: %s\n", path);
+   else if (g_gekkonet_api.load_failed)
+      RARCH_ERR("[GekkoNet] libGekkoNet.so could not be located or failed to initialise.\n");
+
+   if (reason && reason[0])
+      RARCH_ERR("[GekkoNet] Library error: %s\n", reason);
+
+   RARCH_ERR("[GekkoNet] Ensure libGekkoNet.so matches this RetroArch build and exports the required symbols.\n");
+}
+
+#else
+
+static bool gekkonet_load_library(void)
+{
+   g_gekkonet_api.attempted_load = false;
+   g_gekkonet_api.load_failed    = true;
+   return false;
+}
+
+static void gekkonet_log_session_create_failure(void) { }
+
+#endif
+
+static const char *gekkonet_loaded_module_path(void)
+{
+   return g_gekkonet_api.module_path_utf8[0]
+      ? g_gekkonet_api.module_path_utf8 : NULL;
+}
 static bool gekkonet_api_create(GekkoSession **session)
 {
    if (!session)
@@ -686,6 +857,10 @@ static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
    return g_gekkonet_api.default_adapter(port);
 }
 
+#ifdef GEKKONET_CALL
+#undef GEKKONET_CALL
+#endif
+
 #else
 
 static void gekkonet_log_session_create_failure(void)
@@ -751,20 +926,17 @@ static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
 
 #endif
 
-#if defined(GEKKONET_DYNAMIC_LOAD)
 static const char *netplay_diag_last_error_string(void)
 {
+#if defined(GEKKONET_DYNAMIC_LOAD)
    if (!g_gekkonet_api.last_error)
       return NULL;
 
    return g_gekkonet_api.last_error();
-}
 #else
-static const char *netplay_diag_last_error_string(void)
-{
    return NULL;
-}
 #endif
+}
 
 static void netplay_host_diag_capture_gekkonet_state(netplay_host_diagnostics_t *diag)
 {
