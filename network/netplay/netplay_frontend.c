@@ -196,6 +196,12 @@ typedef struct netplay_host_diagnostics
          RARCH_LOG("[GekkoNet][Diag] " __VA_ARGS__); \
    } while (0)
 
+static void netplay_remote_actor_pool_reset(netplay_t *netplay);
+static bool netplay_prepare_remote_actor_pool(netplay_t *netplay);
+static bool netplay_register_remote_actor_from_string(netplay_t *netplay,
+      const char *server, unsigned fallback_port,
+      netplay_host_diagnostics_t *diag, const char *failure_stage);
+
 static void netplay_session_status_set(const char *status,
       unsigned current, unsigned total)
 {
