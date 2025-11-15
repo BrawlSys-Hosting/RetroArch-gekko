@@ -2818,7 +2818,6 @@ static void *gl3_init(const video_info_t *video,
    gl3_t *gl                            = (gl3_t*)calloc(1, sizeof(gl3_t));
    const gfx_ctx_driver_t *ctx_driver   = gl3_get_context(gl);
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
-   unsigned i;
 
    if (!gl || !ctx_driver)
       goto error;
