@@ -1717,6 +1717,8 @@ static bool netplay_setup_session(netplay_t *netplay,
    if (!netplay || !settings || !diag)
       return false;
 
+   memset(&cfg, 0, sizeof(cfg));
+
    if (string_is_empty(client_server) &&
          net_st->server_address_deferred[0])
       client_server = net_st->server_address_deferred;
@@ -1909,12 +1911,20 @@ static bool netplay_setup_session(netplay_t *netplay,
          LocalPlayer, NULL);
    if (netplay->local_handle < 0)
    {
+      const char *lib_error = netplay_diag_last_error_string();
+
       RARCH_ERR("[GekkoNet] Failed to register the local player with the current session.\n");
+      if (lib_error && lib_error[0])
+         RARCH_ERR("[GekkoNet] libGekkoNet last error: %s\n", lib_error);
       strlcpy(diag->failure_stage, "register_local_actor",
             sizeof(diag->failure_stage));
-      strlcpy(diag->failure_reason,
-            "gekkonet_api_add_actor returned a negative handle",
-            sizeof(diag->failure_reason));
+      if (lib_error && lib_error[0])
+         strlcpy(diag->failure_reason, lib_error,
+               sizeof(diag->failure_reason));
+      else
+         strlcpy(diag->failure_reason,
+               "gekkonet_api_add_actor returned a negative handle",
+               sizeof(diag->failure_reason));
       goto netplay_host_fail;
    }
 
@@ -2437,7 +2447,15 @@ static bool netplay_remote_actor_commit(netplay_t *netplay,
    actor->handle = gekkonet_api_add_actor(netplay->session,
          RemotePlayer, &addr);
    if (actor->handle < 0)
+   {
+      const char *lib_error = netplay_diag_last_error_string();
+
+      if (lib_error && lib_error[0])
+         RARCH_ERR("[GekkoNet] libGekkoNet last error while registering %s: %s\n",
+               actor->endpoint[0] ? actor->endpoint : "remote peer",
+               lib_error);
       return false;
+   }
 
    actor->registered = true;
    return true;
@@ -2500,9 +2518,17 @@ static bool netplay_register_remote_actor_from_parts(netplay_t *netplay,
          strlcpy(diag->failure_stage, failure_stage,
                sizeof(diag->failure_stage));
       if (diag && !diag->failure_reason[0])
-         strlcpy(diag->failure_reason,
-               "gekkonet_api_add_actor returned a negative handle",
-               sizeof(diag->failure_reason));
+      {
+         const char *lib_error = netplay_diag_last_error_string();
+
+         if (lib_error && lib_error[0])
+            strlcpy(diag->failure_reason, lib_error,
+                  sizeof(diag->failure_reason));
+         else
+            strlcpy(diag->failure_reason,
+                  "gekkonet_api_add_actor returned a negative handle",
+                  sizeof(diag->failure_reason));
+      }
       netplay_session_status_set("Remote registration failed", 0, 0);
       netplay_remote_actor_release(actor);
       return false;
