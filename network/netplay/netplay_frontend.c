@@ -262,6 +262,7 @@ typedef bool (GEKKONET_CALL *gekkonet_create_proc_t)(GekkoSession **session);
 typedef bool (GEKKONET_CALL *gekkonet_destroy_proc_t)(GekkoSession *session);
 typedef void (GEKKONET_CALL *gekkonet_start_proc_t)(GekkoSession *session, GekkoConfig *config);
 typedef void (GEKKONET_CALL *gekkonet_net_adapter_set_proc_t)(GekkoSession *session, GekkoNetAdapter *adapter);
+typedef void (GEKKONET_CALL *gekkonet_net_adapter_destroy_proc_t)(GekkoNetAdapter *adapter);
 typedef int  (GEKKONET_CALL *gekkonet_add_actor_proc_t)(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr);
 typedef void (GEKKONET_CALL *gekkonet_add_local_input_proc_t)(GekkoSession *session, int player, void *input);
 typedef GekkoGameEvent **(GEKKONET_CALL *gekkonet_update_session_proc_t)(GekkoSession *session, int *count);
@@ -286,6 +287,7 @@ typedef struct gekkonet_dynamic_api
    gekkonet_destroy_proc_t           destroy;
    gekkonet_start_proc_t             start;
    gekkonet_net_adapter_set_proc_t   net_adapter_set;
+   gekkonet_net_adapter_destroy_proc_t net_adapter_destroy;
    gekkonet_add_actor_proc_t         add_actor;
    gekkonet_add_local_input_proc_t   add_local_input;
    gekkonet_update_session_proc_t    update_session;
@@ -677,6 +679,7 @@ static bool gekkonet_load_library(void)
    g_gekkonet_api.abi_version    = 0;
    g_gekkonet_api.abi_version_text[0] = '\0';
    g_gekkonet_api.last_error_message[0] = '\0';
+   g_gekkonet_api.net_adapter_destroy = NULL;
    gekkonet_reset_module_path();
 
    module = NULL;
@@ -797,6 +800,18 @@ static bool gekkonet_load_library(void)
 #undef GEKKONET_RESOLVE
 
    {
+      FARPROC sym = GetProcAddress(module, "gekko_net_adapter_destroy");
+      if (sym)
+      {
+         gekkonet_net_adapter_destroy_proc_t func_tmp = NULL;
+         memcpy(&func_tmp, &sym, sizeof(func_tmp));
+         g_gekkonet_api.net_adapter_destroy = func_tmp;
+      }
+      else
+         RARCH_WARN("[GekkoNet] Optional symbol missing: gekko_net_adapter_destroy (adapter teardown will fall back to handle drop only).\n");
+   }
+
+   {
       FARPROC sym = GetProcAddress(module, "gekko_last_error");
       if (sym)
       {
@@ -905,6 +920,7 @@ static bool gekkonet_load_library(void)
    g_gekkonet_api.abi_version    = 0;
    g_gekkonet_api.abi_version_text[0] = '\0';
    g_gekkonet_api.last_error_message[0] = '\0';
+   g_gekkonet_api.net_adapter_destroy = NULL;
    gekkonet_reset_module_path();
 
    module = NULL;
@@ -989,6 +1005,25 @@ static bool gekkonet_load_library(void)
    GEKKONET_RESOLVE(default_adapter);
 
 #undef GEKKONET_RESOLVE
+
+   {
+      const char *sym_error;
+      void *sym;
+
+      dlerror();
+      sym = dlsym(module, "gekko_net_adapter_destroy");
+      sym_error = dlerror();
+      if (sym && !sym_error)
+      {
+         gekkonet_net_adapter_destroy_proc_t func_tmp = NULL;
+         memcpy(&func_tmp, &sym, sizeof(func_tmp));
+         g_gekkonet_api.net_adapter_destroy = func_tmp;
+      }
+      else
+      {
+         RARCH_WARN("[GekkoNet] Optional symbol missing: gekko_net_adapter_destroy (adapter teardown will fall back to handle drop only).\n");
+      }
+   }
 
    dlerror();
    {
@@ -1108,6 +1143,23 @@ static void gekkonet_api_net_adapter_set(GekkoSession *session, GekkoNetAdapter 
    g_gekkonet_api.net_adapter_set(session, adapter);
 }
 
+static bool gekkonet_api_net_adapter_destroy(GekkoNetAdapter *adapter)
+{
+   if (!adapter)
+      return true;
+
+   if (!gekkonet_load_library())
+      return false;
+
+   if (g_gekkonet_api.net_adapter_destroy)
+   {
+      g_gekkonet_api.net_adapter_destroy(adapter);
+      return true;
+   }
+
+   return false;
+}
+
 static int gekkonet_api_add_actor(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr)
 {
    if (!gekkonet_load_library())
@@ -1187,6 +1239,26 @@ static void gekkonet_api_start(GekkoSession *session, GekkoConfig *config)
 static void gekkonet_api_net_adapter_set(GekkoSession *session, GekkoNetAdapter *adapter)
 {
    gekko_net_adapter_set(session, adapter);
+}
+
+#if defined(__GNUC__) || defined(__clang__)
+GEKKONET_API void gekko_net_adapter_destroy(GekkoNetAdapter *adapter) __attribute__((weak));
+#else
+GEKKONET_API void gekko_net_adapter_destroy(GekkoNetAdapter *adapter);
+#endif
+
+static bool gekkonet_api_net_adapter_destroy(GekkoNetAdapter *adapter)
+{
+#if defined(__GNUC__) || defined(__clang__)
+   if (!gekko_net_adapter_destroy)
+      return false;
+#endif
+
+   if (!adapter)
+      return true;
+
+   gekko_net_adapter_destroy(adapter);
+   return true;
 }
 
 static int gekkonet_api_add_actor(GekkoSession *session, GekkoPlayerType player_type, GekkoNetAddress *addr)
@@ -1963,6 +2035,38 @@ static bool netplay_apply_settings(netplay_t *netplay,
    return true;
 }
 
+static void netplay_teardown_adapter(netplay_t *netplay,
+      unsigned short port,
+      netplay_host_diagnostics_t *diag)
+{
+   (void)diag;
+
+   bool destroyed = false;
+
+   if (!netplay || !netplay->adapter)
+      return;
+
+   NETPLAY_DIAG_LOG(
+         "Tearing down libGekkoNet UDP adapter on port %u before retrying or aborting.",
+         port);
+
+   destroyed = gekkonet_api_net_adapter_destroy(netplay->adapter);
+   if (destroyed)
+   {
+      NETPLAY_DIAG_LOG(
+            "Destroyed libGekkoNet UDP adapter on port %u; port released for reuse.",
+            port);
+   }
+   else
+   {
+      NETPLAY_DIAG_LOG(
+            "libGekkoNet adapter destroy entry point unavailable; cleared adapter handle after failure on port %u.",
+            port);
+   }
+
+   netplay->adapter = NULL;
+}
+
 static bool netplay_setup_session(netplay_t *netplay,
       settings_t *settings, unsigned *port_in_out,
       const char *server,
@@ -2215,6 +2319,7 @@ retry_host_setup:
          NETPLAY_DIAG_LOG(
                "Recreating libGekkoNet session after local actor registration failed.");
 
+         netplay_teardown_adapter(netplay, udp_port, diag);
          retried_local_actor = true;
          gekkonet_api_destroy(netplay->session);
          netplay->session       = NULL;
@@ -2267,6 +2372,10 @@ retry_host_setup:
    return true;
 
 netplay_host_fail:
+   netplay_teardown_adapter(netplay,
+         diag && diag->resolved_port ? (unsigned short)diag->resolved_port : udp_port,
+         diag);
+
    if (netplay->session)
    {
       gekkonet_api_destroy(netplay->session);
