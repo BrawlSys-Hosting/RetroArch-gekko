@@ -1730,6 +1730,7 @@ retry_host_setup:
       gekkonet_api_destroy(netplay->session);
       netplay->session = NULL;
       netplay->local_handle = -1;
+      netplay->adapter = NULL;
    }
 
    if (string_is_empty(client_server) &&
@@ -1990,6 +1991,14 @@ retry_host_setup:
    return true;
 
 netplay_host_fail:
+   if (netplay->session)
+   {
+      gekkonet_api_destroy(netplay->session);
+      netplay->session      = NULL;
+      netplay->local_handle = -1;
+   }
+
+   netplay->adapter = NULL;
    netplay_host_diag_capture_gekkonet_state(diag);
    return false;
 }
