@@ -209,6 +209,12 @@ GEKKONET_API GekkoNetAdapter* gekko_default_adapter(unsigned short port);
 
 #endif /* GEKKONET_NO_ASIO */
 
+#if defined(__GNUC__) || defined(__clang__)
+GEKKONET_API const char *gekko_last_error(void) __attribute__((weak));
+#else
+GEKKONET_API const char *gekko_last_error(void);
+#endif
+
 #ifdef __cplusplus
 }
 #endif

@@ -986,12 +986,18 @@ static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
 static const char *netplay_diag_last_error_string(void)
 {
 #if defined(GEKKONET_DYNAMIC_LOAD)
+   /* Dynamic loader: use the symbol pointer resolved at runtime, if present. */
    if (!g_gekkonet_api.last_error)
       return NULL;
 
    return g_gekkonet_api.last_error();
 #else
-   return NULL;
+   /* Static link: call the libGekkoNet accessor directly when available. */
+#if defined(__GNUC__) || defined(__clang__)
+   if (!gekko_last_error)
+      return NULL;
+#endif
+   return gekko_last_error();
 #endif
 }
 
