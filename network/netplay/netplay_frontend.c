@@ -610,16 +610,7 @@ static bool gekkonet_load_library(void)
    }
 
    if (!g_gekkonet_api.last_error)
-   {
-      RARCH_ERR("[GekkoNet] Missing symbol: gekko_last_error (or gekko_get_last_error)\n");
-      FreeLibrary(module);
-      g_gekkonet_api.module = NULL;
-      g_gekkonet_api.last_error = NULL;
-      g_gekkonet_api.attempted_load = false;
-      g_gekkonet_api.load_failed    = true;
-      gekkonet_reset_module_path();
-      return false;
-   }
+      RARCH_WARN("[GekkoNet] Missing optional symbol: gekko_last_error (or gekko_get_last_error)\n");
 
    return true;
 }
@@ -801,16 +792,7 @@ static bool gekkonet_load_library(void)
    }
 
    if (!g_gekkonet_api.last_error)
-   {
-      RARCH_ERR("[GekkoNet] Missing symbol: gekko_last_error (or gekko_get_last_error)\n");
-      dlclose(module);
-      g_gekkonet_api.module = NULL;
-      g_gekkonet_api.last_error = NULL;
-      g_gekkonet_api.attempted_load = false;
-      g_gekkonet_api.load_failed    = true;
-      gekkonet_reset_module_path();
-      return false;
-   }
+      RARCH_WARN("[GekkoNet] Missing optional symbol: gekko_last_error (or gekko_get_last_error)\n");
 
    return true;
 }
