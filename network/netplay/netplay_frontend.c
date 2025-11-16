@@ -609,6 +609,18 @@ static bool gekkonet_load_library(void)
       }
    }
 
+   if (!g_gekkonet_api.last_error)
+   {
+      RARCH_ERR("[GekkoNet] Missing symbol: gekko_last_error (or gekko_get_last_error)\n");
+      FreeLibrary(module);
+      g_gekkonet_api.module = NULL;
+      g_gekkonet_api.last_error = NULL;
+      g_gekkonet_api.attempted_load = false;
+      g_gekkonet_api.load_failed    = true;
+      gekkonet_reset_module_path();
+      return false;
+   }
+
    return true;
 }
 
@@ -786,6 +798,18 @@ static bool gekkonet_load_library(void)
          g_gekkonet_api.last_error = func_tmp;
       }
       dlerror();
+   }
+
+   if (!g_gekkonet_api.last_error)
+   {
+      RARCH_ERR("[GekkoNet] Missing symbol: gekko_last_error (or gekko_get_last_error)\n");
+      dlclose(module);
+      g_gekkonet_api.module = NULL;
+      g_gekkonet_api.last_error = NULL;
+      g_gekkonet_api.attempted_load = false;
+      g_gekkonet_api.load_failed    = true;
+      gekkonet_reset_module_path();
+      return false;
    }
 
    return true;
@@ -1926,19 +1950,23 @@ retry_host_setup:
    if (netplay->local_handle < 0)
    {
       const char *lib_error = netplay_diag_last_error_string();
+      int error_code        = netplay->local_handle;
 
-      RARCH_ERR("[GekkoNet] Failed to register the local player with the current session.\n");
+      RARCH_ERR("[GekkoNet] Failed to register the local player with the current session (error code %d).\n",
+            error_code);
       if (lib_error && lib_error[0])
          RARCH_ERR("[GekkoNet] libGekkoNet last error: %s\n", lib_error);
+      RARCH_ERR("[GekkoNet] The failure may indicate an ABI mismatch, missing dependency, or configuration problem.\n");
       strlcpy(diag->failure_stage, "register_local_actor",
             sizeof(diag->failure_stage));
       if (lib_error && lib_error[0])
-         strlcpy(diag->failure_reason, lib_error,
-               sizeof(diag->failure_reason));
+         snprintf(diag->failure_reason, sizeof(diag->failure_reason),
+               "gekkonet_api_add_actor error %d: %s",
+               error_code, lib_error);
       else
-         strlcpy(diag->failure_reason,
-               "gekkonet_api_add_actor returned a negative handle",
-               sizeof(diag->failure_reason));
+         snprintf(diag->failure_reason, sizeof(diag->failure_reason),
+               "gekkonet_api_add_actor error %d (no last error)",
+               error_code);
 
       if (!retried_local_actor)
       {
