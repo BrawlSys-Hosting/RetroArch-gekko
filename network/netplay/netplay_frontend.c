@@ -1738,6 +1738,7 @@ static bool netplay_setup_session(netplay_t *netplay,
    unsigned remote_port_hint     = 0;
    bool want_client              = diag && diag->netplay_driver_request_client;
    bool retried_local_actor      = false;
+   bool fallback_port_selected   = false;
 
    if (!netplay || !settings || !diag)
       return false;
@@ -1828,7 +1829,6 @@ retry_host_setup:
    {
       bool port_verified          = false;
       bool port_available         = false;
-      bool fallback_port_selected = false;
       const unsigned max_probes   = 16;
 
       NETPLAY_DIAG_LOG("Probing UDP port %u for availability.", udp_port);
@@ -1915,8 +1915,6 @@ retry_host_setup:
       {
          RARCH_WARN("[GekkoNet] UDP port %u is already in use. Falling back to port %u. Update forwarding rules or configure a different port if needed.\n",
                requested_port, udp_port);
-         configuration_set_uint(settings, settings->uints.netplay_port, udp_port);
-         NETPLAY_DIAG_LOG("Persisted fallback port %u to configuration.", udp_port);
       }
 
       if (port_in_out)
@@ -2014,6 +2012,12 @@ retry_host_setup:
 
    diag->session_started = true;
    NETPLAY_DIAG_LOG("Started libGekkoNet session thread.");
+
+   if (fallback_port_selected)
+   {
+      configuration_set_uint(settings, settings->uints.netplay_port, udp_port);
+      NETPLAY_DIAG_LOG("Persisted fallback port %u to configuration.", udp_port);
+   }
 
    netplay_host_diag_capture_gekkonet_state(diag);
    return true;
