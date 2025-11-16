@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdarg.h>
 
 #if defined(__linux__)
 #include <unistd.h>
@@ -238,6 +239,10 @@ static void netplay_session_status_reset(void)
 #endif
 
 static const char *gekkonet_api_last_error_string(void);
+static bool gekkonet_validate_loaded_version(void);
+
+#define GEKKONET_ABI_VERSION_MIN 0x01000000U /* 1.0.0.0 */
+#define GEKKONET_ABI_VERSION_MAX 0x01FFFFFFU /* 1.255.255.255 */
 
 #if defined(GEKKONET_DYNAMIC_LOAD)
 #if defined(_WIN32)
@@ -265,6 +270,8 @@ typedef void (GEKKONET_CALL *gekkonet_network_stats_proc_t)(GekkoSession *sessio
 typedef void (GEKKONET_CALL *gekkonet_network_poll_proc_t)(GekkoSession *session);
 typedef GekkoNetAdapter *(GEKKONET_CALL *gekkonet_default_adapter_proc_t)(unsigned short port);
 typedef const char *(GEKKONET_CALL *gekkonet_last_error_proc_t)(void);
+typedef const char *(GEKKONET_CALL *gekkonet_get_version_proc_t)(void);
+typedef uint32_t (GEKKONET_CALL *gekkonet_get_abi_version_proc_t)(void);
 
 typedef struct gekkonet_dynamic_api
 {
@@ -272,6 +279,9 @@ typedef struct gekkonet_dynamic_api
    bool                              attempted_load;
    bool                              load_failed;
    char                              module_path_utf8[GEKKONET_MAX_PATH_UTF8];
+   uint32_t                          abi_version;
+   char                              abi_version_text[32];
+   char                              last_error_message[128];
    gekkonet_create_proc_t            create;
    gekkonet_destroy_proc_t           destroy;
    gekkonet_start_proc_t             start;
@@ -292,6 +302,199 @@ static const char *gekkonet_loaded_module_path(void);
 #endif
 
 #if defined(GEKKONET_DYNAMIC_LOAD)
+
+static void gekkonet_set_last_error_message(const char *fmt, ...)
+{
+   if (!fmt)
+   {
+      g_gekkonet_api.last_error_message[0] = '\0';
+      return;
+   }
+
+   g_gekkonet_api.last_error_message[0] = '\0';
+
+   va_list args;
+   va_start(args, fmt);
+   vsnprintf(g_gekkonet_api.last_error_message,
+         sizeof(g_gekkonet_api.last_error_message),
+         fmt, args);
+   va_end(args);
+}
+
+static void gekkonet_format_version_value(uint32_t version,
+      char *buffer, size_t size)
+{
+   unsigned major = (version >> 24) & 0xFF;
+   unsigned minor = (version >> 16) & 0xFF;
+   unsigned patch = (version >> 8)  & 0xFF;
+   unsigned build = version         & 0xFF;
+
+   if (!buffer || size == 0)
+      return;
+
+   if (build)
+      snprintf(buffer, size, "%u.%u.%u.%u", major, minor, patch, build);
+   else
+      snprintf(buffer, size, "%u.%u.%u", major, minor, patch);
+}
+
+static bool gekkonet_version_from_string(const char *version_text,
+      uint32_t *out_value)
+{
+   uint32_t value     = 0;
+   size_t   components = 0;
+   const char *cursor = version_text;
+   char *end          = NULL;
+   bool loop          = true;
+
+   if (!version_text || !out_value)
+      return false;
+
+   do
+   {
+      unsigned long part = strtoul(cursor, &end, 10);
+
+      if (end == cursor || part > 0xFF)
+         return false;
+
+      if (components < sizeof(value))
+         value |= (uint32_t)(part & 0xFF)
+            << (24 - (components * 8));
+
+      components++;
+
+      switch (*end)
+      {
+         case '\0':
+            loop = false;
+            break;
+         case '.':
+            cursor = end + 1;
+            break;
+         default:
+            return false;
+      }
+   } while (loop);
+
+   *out_value = value;
+   return true;
+}
+
+static void gekkonet_expected_version_range(char *buffer, size_t size)
+{
+   char min_buf[32];
+   char max_buf[32];
+
+   if (!buffer || size == 0)
+      return;
+
+   gekkonet_format_version_value(GEKKONET_ABI_VERSION_MIN,
+         min_buf, sizeof(min_buf));
+   gekkonet_format_version_value(GEKKONET_ABI_VERSION_MAX,
+         max_buf, sizeof(max_buf));
+
+   snprintf(buffer, size, "%s - %s", min_buf, max_buf);
+}
+
+static bool gekkonet_validate_loaded_version(void)
+{
+   uint32_t version_value = 0;
+   char expected[64];
+   char detected[32];
+   const char *module_path;
+
+   g_gekkonet_api.abi_version = 0;
+   g_gekkonet_api.abi_version_text[0] = '\0';
+   gekkonet_set_last_error_message(NULL);
+
+   if (!g_gekkonet_api.module)
+      return false;
+
+#if defined(_WIN32)
+   {
+      gekkonet_get_abi_version_proc_t get_abi_version = NULL;
+      gekkonet_get_version_proc_t get_version         = NULL;
+
+      get_abi_version = (gekkonet_get_abi_version_proc_t)GetProcAddress(
+            g_gekkonet_api.module, "gekko_get_abi_version");
+
+      if (get_abi_version)
+         version_value = get_abi_version();
+
+      if (!version_value)
+      {
+         get_version = (gekkonet_get_version_proc_t)GetProcAddress(
+               g_gekkonet_api.module, "gekko_get_version");
+         if (get_version)
+         {
+            const char *text = get_version();
+            if (text && !gekkonet_version_from_string(text, &version_value))
+               version_value = 0;
+         }
+      }
+   }
+#else
+   {
+      gekkonet_get_abi_version_proc_t get_abi_version = NULL;
+      gekkonet_get_version_proc_t get_version         = NULL;
+
+      dlerror();
+      get_abi_version = (gekkonet_get_abi_version_proc_t)dlsym(
+            g_gekkonet_api.module, "gekko_get_abi_version");
+
+      if (get_abi_version)
+         version_value = get_abi_version();
+
+      if (!version_value)
+      {
+         dlerror();
+         get_version = (gekkonet_get_version_proc_t)dlsym(
+               g_gekkonet_api.module, "gekko_get_version");
+         if (get_version)
+         {
+            const char *text = get_version();
+            if (text && !gekkonet_version_from_string(text, &version_value))
+               version_value = 0;
+         }
+      }
+   }
+#endif
+
+   if (!version_value)
+   {
+      gekkonet_set_last_error_message(
+            "libGekkoNet did not report a usable ABI version (expected gekko_get_abi_version or gekko_get_version).");
+      return false;
+   }
+
+   if (version_value < GEKKONET_ABI_VERSION_MIN
+         || version_value > GEKKONET_ABI_VERSION_MAX)
+   {
+      gekkonet_format_version_value(version_value, detected, sizeof(detected));
+      gekkonet_expected_version_range(expected, sizeof(expected));
+      gekkonet_set_last_error_message(
+            "libGekkoNet ABI version %s is outside the supported range %s.",
+            detected, expected);
+      return false;
+   }
+
+   g_gekkonet_api.abi_version = version_value;
+   gekkonet_format_version_value(version_value,
+         g_gekkonet_api.abi_version_text,
+         sizeof(g_gekkonet_api.abi_version_text));
+
+   gekkonet_expected_version_range(expected, sizeof(expected));
+
+   module_path = gekkonet_loaded_module_path();
+   if (!module_path)
+      module_path = g_gekkonet_api.module_path_utf8[0]
+         ? g_gekkonet_api.module_path_utf8 : "libGekkoNet";
+
+   RARCH_LOG("[GekkoNet] Loaded %s (ABI %s; expected %s).\n",
+         module_path, g_gekkonet_api.abi_version_text, expected);
+
+   return true;
+}
 
 static void gekkonet_reset_module_path(void)
 {
@@ -471,6 +674,9 @@ static bool gekkonet_load_library(void)
    g_gekkonet_api.attempted_load = true;
    g_gekkonet_api.load_failed    = false;
    g_gekkonet_api.last_error     = NULL;
+   g_gekkonet_api.abi_version    = 0;
+   g_gekkonet_api.abi_version_text[0] = '\0';
+   g_gekkonet_api.last_error_message[0] = '\0';
    gekkonet_reset_module_path();
 
    module = NULL;
@@ -563,6 +769,7 @@ static bool gekkonet_load_library(void)
       if (!sym) \
       { \
          RARCH_ERR("[GekkoNet] Missing symbol: gekko_" #symbol "\n"); \
+         gekkonet_set_last_error_message("Missing symbol: gekko_" #symbol); \
          FreeLibrary(module); \
          g_gekkonet_api.module = NULL; \
          g_gekkonet_api.last_error = NULL; \
@@ -611,6 +818,22 @@ static bool gekkonet_load_library(void)
 
    if (!g_gekkonet_api.last_error)
       RARCH_WARN("[GekkoNet] Missing optional symbol: gekko_last_error (or gekko_get_last_error)\n");
+
+   if (!gekkonet_validate_loaded_version())
+   {
+      const char *error = gekkonet_api_last_error_string();
+
+      if (error && error[0])
+         RARCH_ERR("[GekkoNet] %s\n", error);
+
+      FreeLibrary(module);
+      g_gekkonet_api.module = NULL;
+      g_gekkonet_api.last_error = NULL;
+      g_gekkonet_api.attempted_load = false;
+      g_gekkonet_api.load_failed    = true;
+      gekkonet_reset_module_path();
+      return false;
+   }
 
    return true;
 }
@@ -679,6 +902,9 @@ static bool gekkonet_load_library(void)
    g_gekkonet_api.attempted_load = true;
    g_gekkonet_api.load_failed    = false;
    g_gekkonet_api.last_error     = NULL;
+   g_gekkonet_api.abi_version    = 0;
+   g_gekkonet_api.abi_version_text[0] = '\0';
+   g_gekkonet_api.last_error_message[0] = '\0';
    gekkonet_reset_module_path();
 
    module = NULL;
@@ -737,6 +963,7 @@ static bool gekkonet_load_library(void)
          RARCH_ERR("[GekkoNet] Missing symbol: gekko_" #symbol "\n"); \
          if (sym_error) \
             RARCH_ERR("[GekkoNet] dlsym error: %s\n", sym_error); \
+         gekkonet_set_last_error_message("Missing symbol: gekko_" #symbol); \
          dlclose(module); \
          g_gekkonet_api.module = NULL; \
          g_gekkonet_api.last_error = NULL; \
@@ -793,6 +1020,22 @@ static bool gekkonet_load_library(void)
 
    if (!g_gekkonet_api.last_error)
       RARCH_WARN("[GekkoNet] Missing optional symbol: gekko_last_error (or gekko_get_last_error)\n");
+
+   if (!gekkonet_validate_loaded_version())
+   {
+      const char *error = gekkonet_api_last_error_string();
+
+      if (error && error[0])
+         RARCH_ERR("[GekkoNet] %s\n", error);
+
+      dlclose(module);
+      g_gekkonet_api.module = NULL;
+      g_gekkonet_api.last_error = NULL;
+      g_gekkonet_api.attempted_load = false;
+      g_gekkonet_api.load_failed    = true;
+      gekkonet_reset_module_path();
+      return false;
+   }
 
    return true;
 }
@@ -983,10 +1226,12 @@ static GekkoNetAdapter *gekkonet_api_default_adapter(unsigned short port)
 
 #endif
 
-static const char *netplay_diag_last_error_string(void)
+static const char *gekkonet_api_last_error_string(void)
 {
 #if defined(GEKKONET_DYNAMIC_LOAD)
-   /* Dynamic loader: use the symbol pointer resolved at runtime, if present. */
+   if (g_gekkonet_api.last_error_message[0])
+      return g_gekkonet_api.last_error_message;
+
    if (!g_gekkonet_api.last_error)
       return NULL;
 
@@ -999,6 +1244,11 @@ static const char *netplay_diag_last_error_string(void)
 #endif
    return gekko_last_error();
 #endif
+}
+
+static const char *netplay_diag_last_error_string(void)
+{
+   return gekkonet_api_last_error_string();
 }
 
 static void netplay_host_diag_capture_gekkonet_state(netplay_host_diagnostics_t *diag)
@@ -1772,14 +2022,20 @@ retry_host_setup:
 
    if (!netplay->session && !gekkonet_api_create(&netplay->session))
    {
+      const char *lib_error = netplay_diag_last_error_string();
+
       RARCH_ERR("[GekkoNet] Failed to create a session with libGekkoNet.\n");
       gekkonet_log_session_create_failure();
       netplay_host_diag_capture_gekkonet_state(diag);
       strlcpy(diag->failure_stage, "session_create",
             sizeof(diag->failure_stage));
-      strlcpy(diag->failure_reason,
-            "libGekkoNet session handle creation failed",
-            sizeof(diag->failure_reason));
+      if (lib_error && lib_error[0])
+         strlcpy(diag->failure_reason, lib_error,
+               sizeof(diag->failure_reason));
+      else
+         strlcpy(diag->failure_reason,
+               "libGekkoNet session handle creation failed",
+               sizeof(diag->failure_reason));
       goto netplay_host_fail;
    }
 
